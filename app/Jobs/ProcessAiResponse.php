@@ -139,7 +139,7 @@ class ProcessAiResponse implements ShouldQueue
                 ->where(fn($sub) => $sub->where('valid_to', '>=', $intent)->orWhereNull('valid_to'))
             )
             ->limit(3)->get();
-            
+
         if ($kbChunks->isEmpty()) {
             Log::info("RAG: База знаний не дала результатов по этому запросу.", ['chat_id' => $this->chat->id]);
         }
@@ -163,9 +163,9 @@ class ProcessAiResponse implements ShouldQueue
         $maxChars = 10000; 
         
         $kb = "### БАЗА ЗНАНИЙ:\n" . $contextData['kb'];
-        $long = "\n\n### КОНТЕКСТ ПРОШЛОГО:\n" . $contextData['long_term'];
-        $short = "\n\n### ТЕКУЩИЙ ДИАЛОГ:\n" . $contextData['short_term'];
-        $q = "\n\nВопрос: " . $userText;
+        $long = "\n### КОНТЕКСТ ПРОШЛОГО:\n" . $contextData['long_term'];
+        $short = "\n### ТЕКУЩИЙ ДИАЛОГ:\n" . $contextData['short_term'];
+        $q = "\nВопрос: " . $userText;
 
         // Приоритет 1: Все влезает
         if (mb_strlen($kb . $long . $short . $q) <= $maxChars) {
