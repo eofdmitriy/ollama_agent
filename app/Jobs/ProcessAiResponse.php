@@ -163,9 +163,9 @@ class ProcessAiResponse implements ShouldQueue
         $maxChars = 10000; 
         
         $kb = "### БАЗА ЗНАНИЙ:\n" . $contextData['kb'];
-        $long = "\n### КОНТЕКСТ ПРОШЛОГО:\n" . $contextData['long_term'];
-        $short = "\n### ТЕКУЩИЙ ДИАЛОГ:\n" . $contextData['short_term'];
-        $q = "\nВопрос: " . $userText;
+        $long = "\n\n### КОНТЕКСТ ПРОШЛОГО:\n" . $contextData['long_term'];
+        $short = "\n\n### ТЕКУЩИЙ ДИАЛОГ:\n" . $contextData['short_term'];
+        $q = "\n\nВопрос: " . $userText;
 
         // Приоритет 1: Все влезает
         if (mb_strlen($kb . $long . $short . $q) <= $maxChars) {
