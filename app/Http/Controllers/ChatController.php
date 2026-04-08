@@ -79,20 +79,20 @@ class ChatController extends Controller
     /**
      * Отправить сообщение.
      */
-   public function sendMessage(Request $request, Chat $chat)
+    public function sendMessage(Request $request, Chat $chat)
     {
         Gate::authorize('update', $chat);
         $request->validate(['content' => 'required|string']);
         $userText = $request->input('content');
 
         // 1. Сохраняем только юзера (это мгновенно)
-        $chat->messages()->create([
+        $message = $chat->messages()->create([
             'role' => 'user',
             'content' => $userText,
         ]);
 
         // 2. Отправляем всё остальное в очередь
-        ProcessAiResponse::dispatch($chat, $userText);
+        ProcessAiResponse::dispatch($chat, $userText, $message);
 
         // 3. Возвращаем Inertia-ответ сразу
         return back();

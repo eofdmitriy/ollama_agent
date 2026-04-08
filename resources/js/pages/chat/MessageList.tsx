@@ -85,7 +85,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, ai_model }) => {
             duration: 0.2, 
             ease: [0.23, 1, 0.32, 1] 
           }}
-          layout="position" 
+  
           className={`flex w-full ${message.isUser ? 'justify-end' : 'justify-start'}`}
       >
           <div className={`relative group max-w-[92%] sm:max-w-[85%] md:max-w-[80%] ${message.isUser ? 'ml-4' : 'mr-4'}`}>

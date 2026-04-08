@@ -13,6 +13,7 @@ use Prism\Prism\Text\Response;
 use Prism\Prism\ValueObjects\Usage;
 use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\Enums\FinishReason;
+use Illuminate\Support\Arr; 
 
 class MockOllamaService implements LlmServiceContract
 {
@@ -24,12 +25,14 @@ class MockOllamaService implements LlmServiceContract
     }
 
 
+
     public function generate(string $prompt, string $system = ''): string
     {
         $lowerPrompt = mb_strtolower($prompt);
 
+        // Логика сбоя
         if (str_contains($lowerPrompt, 'сломайся')) {
-            Cache::put($this->cacheKey, 'down', 60);
+            Cache::put($this->cacheKey, 'down', 10);
             throw new Exception("Критический сбой Ollama: соединение потеряно (MOCK).");
         }
 
@@ -42,27 +45,43 @@ class MockOllamaService implements LlmServiceContract
             throw new Exception("Ollama Offline: Сервис находится в режиме сбоя.");
         }
 
+        // Варианты ответов разной длины
+        $responses = [
+            "Принято! Обрабатываю ваш запрос.",
+            "Я проанализировал ваш промпт '{$prompt}' и считаю, что это интересная задача для нейросети.",
+            "В рамках текущей симуляции (Prism Fake) я имитирую работу модели {$this->model}. Ваш системный промпт был: " . ($system ?: 'пустой') . ".\nВсе системы работают в штатном режиме.",
+            "[MOCK_DATA] Status: 200. Tokens: 42. Logic: Success. Prompt_Length: " . strlen($prompt),
+            "Представьте, что здесь очень умный ответ от Ollama, который помогает вам решить все проблемы за один клик!"
+        ];
+
+        $randomText = Arr::random($responses);
+
+        // Подменяем ответ в Prism
         Prism::fake([
             new Response(
                 steps: new Collection(),
-                text: "MOCK-PRISM: Ответ на '{$prompt}'. Контекст: " . ($system ?: 'нет'),
+                text: $randomText,
                 finishReason: FinishReason::Stop,
                 toolCalls: [],
                 toolResults: [],
-                usage: new Usage(10, 20), 
-                meta: new Meta(id: 'mock-id', model: 'mock-model'), 
+                usage: new Usage(15, 35), 
+                meta: new Meta(id: 'mock-' . uniqid(), model: $this->model), 
                 messages: new Collection(),
                 additionalContent: [],
                 raw: []
             )
         ]);
 
+        // Имитируем задержку "раздумий" ИИ
+        sleep(2); 
+        
         return Prism::text()
             ->using(Provider::Ollama, $this->model)
             ->withPrompt($prompt)
             ->generate()
             ->text;
     }
+
 
     public function generateTitle(string $text): string
     {
@@ -82,6 +101,8 @@ class MockOllamaService implements LlmServiceContract
                 raw: []
             )
         ]);
+
+        sleep(2); 
 
         return Prism::text()
             ->using(Provider::Ollama, 'mock')

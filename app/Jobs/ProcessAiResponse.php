@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Contracts\LlmServiceContract;
 use App\Models\Chat;
+use App\Models\Message;
 use App\Models\KnowledgeBase;
 use App\Events\MessageSent;
 use App\Events\ChatUpdated;
@@ -24,7 +25,7 @@ class ProcessAiResponse implements ShouldQueue
 
     public $timeout = 900;
 
-    public function __construct(protected Chat $chat, protected string $userText) {}
+    public function __construct(protected Chat $chat, protected string $userText, protected Message $message) {}
 
     public function handle(LlmServiceContract $ai)
     {
@@ -38,8 +39,7 @@ class ProcessAiResponse implements ShouldQueue
             // Векторизация вопроса
             $queryVector = new Vector($ai->getEmbedding($safeUserText));
 
-            $this->chat->messages()->where('role', 'user')->latest()->first()
-                ?->updateQuietly(['embedding' => $queryVector]);
+             $this->message->updateQuietly(['embedding' => $queryVector]);
 
             // Анализ намерения
             $rawIntent = $ai->generate(
@@ -64,7 +64,16 @@ class ProcessAiResponse implements ShouldQueue
 
             $this->logRagSearch($intent, $contextData['sources'], mb_strlen($smartContent));
 
-            $systemPrompt = "Ты корпоративный ассистент. Отвечай кратко на основе данных:\n\n" . $smartContent;
+            $hasKnowledge = !empty($contextData['kb']);
+
+            $systemPrompt = "Ты корпоративный ассистент. Отвечай кратко. ";
+            $systemPrompt .= "Используй только предоставленный контекст. Если в контексте нет ответа, так и скажи, не придумывай факты.\n\n";
+            
+            if (!$hasKnowledge) {
+                $systemPrompt .= "ПРЕДУПРЕЖДЕНИЕ: В базе знаний подходящих данных не найдено. Отвечай на основе истории диалога или общих знаний, но уточни, что в документах этого нет.\n\n";
+            }
+
+            $systemPrompt .= $smartContent;
 
             // Генерация основного ответа
             $aiResponse = $ai->generate($safeUserText, $systemPrompt);
@@ -100,42 +109,51 @@ class ProcessAiResponse implements ShouldQueue
     {
         $sources = [];
 
-        // БАЗА ЗНАНИЙ
-        $kbQuery = KnowledgeBase::query()
-            ->nearestNeighbors('embedding', $vector, Distance::Cosine)
-            ->whereRaw("(1 - (embedding <=> ?)) > 0.7", [$vector]);
+        // 1. СНАЧАЛА берем КОРОТКУЮ ПАМЯТЬ
+        $recent = Message::where('chat_id', $this->chat->id)
+            ->where('id', '<', $this->message->id)
+            ->orderBy('id', 'desc')
+            ->limit(4)
+            ->get(); 
 
-        if ($intent === 'current') { 
-            $kbQuery->where('is_current', true); 
-        } else { 
-            $kbQuery->where('valid_from', '<=', $intent)
-                    ->where(fn($q) => $q->where('valid_to', '>=', $intent)->orWhereNull('valid_to')); 
-        }
+        $excludeIds = $recent->pluck('id')->push($this->message->id);
 
-        $kbChunks = $kbQuery->limit(3)->get();
-        $sources['kb'] = $kbChunks->pluck('document.title')->toArray();
-
-        // ДЛИННАЯ ПАМЯТЬ
-        $latestIds = $this->chat->messages()->latest()->limit(5)->pluck('id');
-        $archivedMsgs = $this->chat->messages()
-            ->whereNotIn('id', $latestIds)
+        // 3. ДЛИННАЯ ПАМЯТЬ 
+        $archivedMsgs = Message::where('chat_id', $this->chat->id)
+            ->whereNotIn('id', $excludeIds)
             ->whereNotNull('embedding')
             ->nearestNeighbors('embedding', $vector, Distance::Cosine)
             ->whereRaw("(1 - (embedding <=> ?)) > 0.75", [$vector])
-            ->limit(2)->get();
+            ->limit(2)
+            ->get();
         
         $sources['history'] = $archivedMsgs->pluck('id')->toArray();
 
-        // КОРОТКАЯ ПАМЯТЬ
-        $recent = $this->chat->messages()->latest()->skip(1)->limit(4)->get()->reverse();
+        // 4. БАЗА ЗНАНИЙ 
+        $kbChunks = KnowledgeBase::query()
+            ->nearestNeighbors('embedding', $vector, Distance::Cosine)
+            ->whereRaw("(1 - (embedding <=> ?)) > 0.7", [$vector])
+            ->when($intent === 'current', fn($q) => $q->where('is_current', true))
+            ->when($intent !== 'current', fn($q) => 
+                $q->where('valid_from', '<=', $intent)
+                ->where(fn($sub) => $sub->where('valid_to', '>=', $intent)->orWhereNull('valid_to'))
+            )
+            ->limit(3)->get();
+            
+        if ($kbChunks->isEmpty()) {
+            Log::info("RAG: База знаний не дала результатов по этому запросу.", ['chat_id' => $this->chat->id]);
+        }
+
+        $sources['kb'] = $kbChunks->pluck('document.title')->toArray();
 
         return [
             'kb'         => $kbChunks->map(fn($m) => $this->cleanText($m->content))->implode("\n---\n"),
             'long_term'  => $archivedMsgs->map(fn($m) => $this->cleanText($m->content))->implode("\n---\n"),
-            'short_term' => $recent->map(fn($m) => "{$m->role}: " . $this->cleanText($m->content))->implode("\n"),
+            'short_term' => $recent->reverse()->map(fn($m) => "{$m->role}: " . $this->cleanText($m->content))->implode("\n"),
             'sources'    => $sources
         ];
     }
+
 
     /**
      * Динамическое управление контекстным окном (4096 токенов ~ 10-12к символов)

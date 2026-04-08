@@ -10,19 +10,25 @@ interface MessageBoxProps {
         loading?: ReactNode;
     };
     messages: DBMessage[]; 
+    isProcessing: boolean;
 }
 
 
-const MessageBox: React.FC<MessageBoxProps> = ({ children, messages }) => {
+const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessing  }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  
+  const lastScrolledMessageIdRef = useRef<number | string | null>(null);
+  const isProcessingInertiaRef = useRef(isProcessing);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   
   const wasAtBottomRef = useRef(true);
   const lastScrollTopRef = useRef(0);
   const prevCountRef = useRef(messages.length);
+
+  useEffect(() => {
+    isProcessingInertiaRef.current = isProcessing;
+  }, [isProcessing]);
 
   // Мгновенный скролл в самый низ
   const forceScroll = useCallback(() => {
@@ -36,7 +42,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages }) => {
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 200;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
     
     setShowScrollButton(!isAtBottom);
     if (isAtBottom) {
@@ -48,7 +54,6 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages }) => {
     wasAtBottomRef.current = isAtBottom;
   }, []);
 
-  // 1. СЧЕТЧИК: Срабатывает СТРОГО при изменении массива
     // 1. СЧЕТЧИК: Срабатывает СТРОГО при изменении массива
     useLayoutEffect(() => {
     const isNewMessage = messages.length > prevCountRef.current;
@@ -75,6 +80,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages }) => {
 
 
   // 2. ОБСЕРВЕР: Управляет "прилипанием"
+
   useEffect(() => {
     if (!contentRef.current || !containerRef.current) return;
 
@@ -84,18 +90,31 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages }) => {
       const lastMessage = messages[messages.length - 1];
       if (!lastMessage) return;
 
-      if (lastMessage.role === 'user' || wasAtBottomRef.current) {
-        // Режим ПРИЛИПАНИЯ
+      // 1. Принудительный скролл вниз только для НОВЫХ сообщений юзера
+      const isNewUserMessage = lastMessage.role === 'user' && lastScrolledMessageIdRef.current !== lastMessage.id;
+
+      if (isNewUserMessage) {
         container.scrollTop = container.scrollHeight;
-      } else {
-        // Режим ЧТЕНИЯ ИСТОРИИ: жестко держим позицию
-        container.scrollTop = lastScrollTopRef.current;
+        lastScrolledMessageIdRef.current = lastMessage.id;
+        wasAtBottomRef.current = true;
+        return;
       }
+
+      // 2. Если мы НЕ внизу (пользователь читает историю) — 
+      // ПРОСТО ВЫХОДИМ. Не нужно переприсваивать scrollTop.
+      // Браузер благодаря overflow-anchor: auto сам удержит позицию.
+      if (!wasAtBottomRef.current) {
+        return; 
+      }
+
+      // 3. Если мы прилипли к низу — продолжаем прилипать
+      container.scrollTop = container.scrollHeight;
     });
 
     observer.observe(contentRef.current);
     return () => observer.disconnect();
   }, [messages]);
+
 
   // Начальный скролл при загрузке
   useEffect(() => {
@@ -108,7 +127,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages }) => {
       ref={containerRef}
       className="flex-1 overflow-y-auto relative"
       onScroll={handleScroll}
-      style={{ overflowAnchor: 'none', scrollBehavior: 'auto' }}
+      style={{ overflowAnchor: 'auto', scrollBehavior: 'auto' }}
     >
       <div ref={contentRef} className="flex flex-col min-h-full p-4">
          <div className="flex-1">
@@ -120,29 +139,40 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages }) => {
     <AnimatePresence>
       {showScrollButton && (
         <motion.div 
-          className="fixed bottom-24 right-8 z-50"
-          // Анимация самой кнопки: вылетает снизу с легким увеличением
+          // Изменили bottom-24 на bottom-32 (или выше, например bottom-40), чтобы поднять кнопку
+          className="fixed bottom-28 right-4 lg:right-8 z-50"
           initial={{ opacity: 0, y: 20, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          animate={{ 
+            opacity: 1, 
+            y: [0, -10, 0], // Кнопка плавно ходит вверх-вниз на 10px
+            scale: 1 
+          }}
           exit={{ opacity: 0, y: 10, scale: 0.8 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          transition={{ 
+            // Комбинируем типы анимации
+            opacity: { duration: 0.2 },
+            scale: { duration: 0.2 },
+            y: {
+              duration: 2,         // Скорость плавания
+              repeat: Infinity,    // Бесконечно
+              ease: "easeInOut"    // Плавность
+            }
+          }}
         >
           <button 
             onClick={forceScroll} 
-            className="relative p-3 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors active:scale-95 cursor-pointer disabled:cursor-not-allowed"
+            className="relative p-3 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-all active:scale-90 cursor-pointer"
           >
             <IoIosArrowDown className="w-6 h-6" />
             
-            {/* Анимация бейджа */}
+            {/* Бейдж оставляем без изменений */}
             <AnimatePresence>
               {unreadCount > 0 && (
                 <motion.span
-                  // Ключ по значению unreadCount заставляет бейдж "подпрыгивать" при изменении цифры
                   key={`unread-badge-${unreadCount}`}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
                   className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center border-2 border-white shadow-sm"
                 >
                   {unreadCount}

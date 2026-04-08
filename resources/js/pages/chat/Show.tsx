@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePage, router } from '@inertiajs/react';
 import AuthenticatedChatLayout from '@/layouts/AuthenticatedChatLayout';
 import MessageBox from './MessageBox';
@@ -12,6 +12,7 @@ export default function Show() {
     
     const [localMessages, setLocalMessages] = useState(messages);
     const [isAiProcessing, setIsAiProcessing] = useState(false);
+    const prevChatIdRef = useRef(currentChat?.id); 
 
     // Подписка на сообщения конкретного чата (MessageSent)
     useEffect(() => {
@@ -34,14 +35,19 @@ export default function Show() {
 
     // Синхронизация при смене чата
     useEffect(() => {
-        // Проверяем последнее сообщение в массиве из пропсов
-        const lastMsg = messages[messages.length - 1];
-        
-        const isWaiting = lastMsg?.role === 'user';
+        const isChatChanged = currentChat?.id !== prevChatIdRef.current;
+        const isMessagesCountChanged = messages.length !== localMessages.length;
 
-        setIsAiProcessing(isWaiting);
-        setLocalMessages(messages);
+        if (isChatChanged || isMessagesCountChanged) {
+            setLocalMessages(messages);
+        }
+        
+        const lastMsg = messages[messages.length - 1];
+        setIsAiProcessing(lastMsg?.role === 'user');
+        
+        prevChatIdRef.current = currentChat?.id;
     }, [currentChat?.id, messages]); 
+
 
 
     const handleSendMessage = (text: string) => {
@@ -62,6 +68,8 @@ export default function Show() {
         }, {
             only: isFirstMessage ? ['messages', 'currentChat', 'allChats'] : ['messages'],
             preserveScroll: true,
+            preserveState: true,
+            showProgress: false,
             onStart: () => setIsAiProcessing(true),
             onError: () => {
                 setLocalMessages(messages);
@@ -72,7 +80,7 @@ export default function Show() {
 
     return (
         <AuthenticatedChatLayout messages={localMessages} ai_model={ai_model}>
-            <MessageBox messages={localMessages}>
+            <MessageBox messages={localMessages} isProcessing={isAiProcessing}>
                 {{
                     content: <MessageList messages={localMessages.map((m: any) => ({
                         id: m.id,
