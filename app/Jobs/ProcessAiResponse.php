@@ -131,6 +131,7 @@ class ProcessAiResponse implements ShouldQueue
 
         // 4. БАЗА ЗНАНИЙ 
         $kbChunks = KnowledgeBase::query()
+            ->with('document')
             ->nearestNeighbors('embedding', $vector, Distance::Cosine)
             ->whereRaw("(1 - (embedding <=> ?)) > 0.7", [$vector])
             ->when($intent === 'current', fn($q) => $q->where('is_current', true))
@@ -144,7 +145,7 @@ class ProcessAiResponse implements ShouldQueue
             Log::info("RAG: База знаний не дала результатов по этому запросу.", ['chat_id' => $this->chat->id]);
         }
 
-        $sources['kb'] = $kbChunks->pluck('document.title')->toArray();
+        $sources['kb'] = $kbChunks->map(fn($chunk) => $chunk->document?->title ?? 'Без названия')->toArray();
 
         return [
             'kb'         => $kbChunks->map(fn($m) => $this->cleanText($m->content))->implode("\n---\n"),

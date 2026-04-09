@@ -65,9 +65,11 @@ class IndexDocumentJob implements ShouldQueue
 
             $hasChunks = false;
 
+            $chunksToInsert = [];
+
             // 5. Векторизация
             foreach ($documents as $doc) {
-                $chunks = DocumentSplitter::splitDocument($doc, 800); 
+                $chunks = DocumentSplitter::splitDocument($doc, 800, ' ', 80);
                 Log::info("Документ нарезан на " . count($chunks) . " чанков.");
                 
                 foreach ($chunks as $index => $chunk) {
@@ -77,8 +79,7 @@ class IndexDocumentJob implements ShouldQueue
                     $embeddingArray = $generator->embedText($enrichedContent);
                     Log::info("Вектор для чанка {$index} получен.");
 
-                    // СОХРАНЯЕМ СРАЗУ (память не копится), но скрыто (is_current = false)
-                    DB::table('knowledge_base')->insert([
+                    $chunksToInsert[] = [
                         'document_id'     => $this->document->id,
                         'content'         => $enrichedContent,
                         'embedding'       => (string) new Vector($embeddingArray),
@@ -87,9 +88,19 @@ class IndexDocumentJob implements ShouldQueue
                         'valid_from'      => now(),
                         'created_at'      => now(),
                         'updated_at'      => now(),
-                    ]);
+                    ];
+
+                    // Вставляем порциями по 50, чтобы экономить память
+                    if (count($chunksToInsert) >= 50) {
+                        DB::table('knowledge_base')->insert($chunksToInsert);
+                        $chunksToInsert = [];
+                    }
                     $hasChunks = true;
                 }
+            }
+
+            if (!empty($chunksToInsert)) {
+                DB::table('knowledge_base')->insert($chunksToInsert);
             }
 
             // 6. Транзакция
@@ -112,10 +123,7 @@ class IndexDocumentJob implements ShouldQueue
                         'knowledge_base.valid_to'   => now()
                     ]);
 
-                // ШАГ Б: Удаляем старые АКТИВНЫЕ данные этого ID (Retry/Update)
-                KnowledgeBase::where('document_id', $this->document->id)->where('is_current', true)->delete();
-
-                // ШАГ В: Активируем всё, что только что вставили
+                // ШАГ Б: Активируем всё, что только что вставили
                 KnowledgeBase::where('document_id', $this->document->id)
                     ->where('is_current', false)
                     ->update(['is_current' => true]);
