@@ -10,6 +10,7 @@ use Prism\Prism\Facades\Prism;
 use Prism\Prism\Enums\Provider;
 use LLPhant\OllamaConfig;
 use LLPhant\Embeddings\EmbeddingGenerator\Ollama\OllamaEmbeddingGenerator; 
+use Illuminate\Support\Str;
 
 class RealOllamaService implements LlmServiceContract
 {
@@ -44,6 +45,7 @@ class RealOllamaService implements LlmServiceContract
                         'num_ctx'    =>  (int) $this->contextSize,
                         'num_thread' => (int) $this->threadCount,
                     ])
+                ->usingTemperature(0.1)
                 ->generate();
 
             return $response->text;
@@ -91,7 +93,7 @@ class RealOllamaService implements LlmServiceContract
                 $title = implode(' ', array_slice($words, 0, 4));
             }
 
-            return mb_convert_case($title, MB_CASE_TITLE, "UTF-8") ?: 'Новый чат';
+            return Str::ucfirst($title) ?: 'Новый чат';
 
         } catch (Exception $e) {
             Log::error("Prism Title Generation Error: " . $e->getMessage());

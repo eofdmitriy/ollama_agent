@@ -69,7 +69,7 @@ class IndexDocumentJob implements ShouldQueue
 
             // 5. Векторизация
             foreach ($documents as $doc) {
-                $chunks = DocumentSplitter::splitDocument($doc, 800, ' ', 80);
+                $chunks = DocumentSplitter::splitDocument($doc, 2000, ' ', 100);
                 Log::info("Документ нарезан на " . count($chunks) . " чанков.");
                 
                 foreach ($chunks as $index => $chunk) {

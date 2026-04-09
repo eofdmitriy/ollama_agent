@@ -83,8 +83,8 @@ class KnowledgeBaseController extends Controller
 
         // 2. Категория
         $category = $request->new_category 
-            ? Str::slug($request->new_category) 
-            : $request->category;
+        ? trim($request->new_category) 
+        : $request->category;
 
         // 3. Имена
         $file = $request->file('file');

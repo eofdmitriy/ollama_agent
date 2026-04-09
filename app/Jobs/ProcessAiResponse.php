@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
 use Pgvector\Laravel\Vector;
 use Pgvector\Laravel\Distance;
 use Exception;
+use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 class ProcessAiResponse implements ShouldQueue
 {
@@ -36,28 +38,64 @@ class ProcessAiResponse implements ShouldQueue
 
             $safeUserText = mb_substr($this->userText, 0, 1500);
 
-            // Векторизация вопроса
-            $queryVector = new Vector($ai->getEmbedding($safeUserText));
+            $recent = Message::where('chat_id', $this->chat->id)
+            ->where('id', '<', $this->message->id)
+            ->orderBy('id', 'desc')->limit(4)->get();
 
-             $this->message->updateQuietly(['embedding' => $queryVector]);
+            $historyStr = $recent->reverse()->map(fn($m) => "{$m->role}: {$m->content}")->implode("\n");
 
-            // Анализ намерения
-            $rawIntent = $ai->generate(
-                "Вопрос: '{$safeUserText}'. О каком времени речь? Сегодня: " . now()->format('Y-m-d') . ". Ответь ТОЛЬКО: YYYY-MM-DD или 'current'.",
-                "Ты — строгий классификатор даты. Не пиши пояснений."
+            $searchQuery = $ai->generate(
+                "История:\n{$historyStr}\nВопрос: '{$safeUserText}'.\n" .
+                "Задание: Перефразируй вопрос в полный поисковый запрос НА РУССКОМ ЯЗЫКЕ. " .
+                "Замени местоимения (он, его) и ссылки на контекст (те же даты, там же) конкретными именами и датами из истории. " .
+                "Если информации для уточнения нет — просто верни вопрос как есть. " .
+                "Ответь ТОЛЬКО текстом запроса, без кавычек и пояснений.",
+                "Ты — поисковый аналитик. Пиши строго на русском языке."
             );
 
+            // Убираем возможные кавычки, если ИИ их все же добавил
+            $searchQuery = trim($searchQuery, " \t\n\r\0\x0B\"");
+
+            Log::info("RAG Rephrased", [
+                'original' => $safeUserText,
+                'rephrased' => $searchQuery
+            ]);
+
+            // Векторизация вопроса
+            $queryVector = new Vector($ai->getEmbedding($searchQuery));
+
+            $this->message->updateQuietly(['embedding' => $queryVector]);
+
+            // Анализ намерения
+           $rawIntent = $ai->generate(
+                "Вопрос: '{$searchQuery}'. 
+                Если пользователь спрашивает про график/план вообще (без слов 'сегодня', 'сейчас') — ответь 'current'.
+                Если указана дата или слова 'сегодня/завтра' — переведи в YYYY-MM-DD.
+                Сегодня: " . now()->format('Y-m-d') . ". 
+                Ответь ТОЛЬКО: YYYY-MM-DD или 'current'.",
+                "Ты — строгий классификатор даты."
+            );
             Log::debug("AI Intent Raw Response", ['raw' => $rawIntent]);
 
+            // Анализ намерения
             $intent = 'current';
+
+            // Ищем что-то похожее на дату
             if (preg_match('/\d{4}-\d{2}-\d{2}/', $rawIntent, $matches)) {
-                $intent = $matches[0];
+                $foundDate = $matches[0];
+                try {
+                    Carbon::parse($foundDate);
+                    $intent = $foundDate;
+                } catch (Exception $e) {
+                    $intent = 'current';
+                }
             } elseif (preg_match('/\bcurrent\b/i', $rawIntent)) {
                 $intent = 'current';
             }
 
+
             // Сборка сырого КОНТЕКСТА
-            $contextData = $this->getCombinedContext($queryVector, $intent);
+            $contextData = $this->getCombinedContext($queryVector, $intent, $recent);
             
             // ПРИМЕНЯЕМ УМНУЮ ОБРЕЗКУ 
             $smartContent = $this->getSmartPrompt($contextData, $safeUserText);
@@ -74,9 +112,9 @@ class ProcessAiResponse implements ShouldQueue
             }
 
             $systemPrompt .= $smartContent;
-
+            $finalInput = "Вопрос: {$safeUserText}\nУточнение: {$searchQuery}";
             // Генерация основного ответа
-            $aiResponse = $ai->generate($safeUserText, $systemPrompt);
+            $aiResponse = $ai->generate($finalInput, $systemPrompt);
 
             // Сохранение ответа и его вектора
             $aiMsg = $this->chat->messages()->create([
@@ -105,20 +143,13 @@ class ProcessAiResponse implements ShouldQueue
         }
     }
 
-    protected function getCombinedContext(Vector $vector, string $intent): array
+    protected function getCombinedContext(Vector $vector, string $intent, Collection $recent): array
     {
         $sources = [];
 
-        // 1. СНАЧАЛА берем КОРОТКУЮ ПАМЯТЬ
-        $recent = Message::where('chat_id', $this->chat->id)
-            ->where('id', '<', $this->message->id)
-            ->orderBy('id', 'desc')
-            ->limit(4)
-            ->get(); 
-
         $excludeIds = $recent->pluck('id')->push($this->message->id);
 
-        // 3. ДЛИННАЯ ПАМЯТЬ 
+        // ДЛИННАЯ ПАМЯТЬ 
         $archivedMsgs = Message::where('chat_id', $this->chat->id)
             ->whereNotIn('id', $excludeIds)
             ->whereNotNull('embedding')
@@ -129,7 +160,7 @@ class ProcessAiResponse implements ShouldQueue
         
         $sources['history'] = $archivedMsgs->pluck('id')->toArray();
 
-        // 4. БАЗА ЗНАНИЙ 
+        // БАЗА ЗНАНИЙ 
         $kbChunks = KnowledgeBase::query()
             ->with('document')
             ->nearestNeighbors('embedding', $vector, Distance::Cosine)
