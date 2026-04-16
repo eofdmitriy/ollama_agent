@@ -73,7 +73,7 @@ class MockOllamaService implements LlmServiceContract
         ]);
 
         // Имитируем задержку "раздумий" ИИ
-        sleep(2); 
+        sleep(1); 
         
         return Prism::text()
             ->using(Provider::Ollama, $this->model)
@@ -102,7 +102,7 @@ class MockOllamaService implements LlmServiceContract
             )
         ]);
 
-        sleep(2); 
+        sleep(1); 
 
         return Prism::text()
             ->using(Provider::Ollama, 'mock')

@@ -18,6 +18,7 @@ Route::get('/', function (Request $request) {
     }
     return inertia('welcome', [
         'canRegister' => Features::enabled(Features::registration()),
+        'canResetPassword' => Route::has('password.request'), 
         'initialIsLogin' => $request->query('action') !== 'register',
     ]);
 })->name('home');

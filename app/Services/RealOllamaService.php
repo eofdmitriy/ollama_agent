@@ -50,11 +50,13 @@ class RealOllamaService implements LlmServiceContract
 
             return $response->text;
         } catch (Exception $e) {
-            Log::error("Ollama Generation Error: " . $e->getMessage(), [
-                'model' => $this->model,
-                'prompt_limit' => mb_substr($prompt, 0, 100)
+            Log::error("Ollama Service Error: " . $e->getMessage(), [
+                'model'=> $this->model,
+                'prompt_chunk' => mb_substr($prompt, 0, 250),
+                'system_chunk' => mb_substr($system, 0, 100),
+                'exception'=> $e,
             ]);
-            throw new Exception("Ollama Error: " . $e->getMessage());
+            throw new Exception("Ошибка генерации ответа ИИ: " . $e->getMessage());
         }
     }
 

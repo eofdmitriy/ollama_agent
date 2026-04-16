@@ -56,26 +56,23 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessin
 
     // 1. СЧЕТЧИК: Срабатывает СТРОГО при изменении массива
     useLayoutEffect(() => {
-    const isNewMessage = messages.length > prevCountRef.current;
-    
-    if (isNewMessage && containerRef.current) {
-      const lastMessage = messages[messages.length - 1];
-      const container = containerRef.current;
-
-      // Считаем остаток до низа
-      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      const isNewMessage = messages.length > prevCountRef.current;
       
-      // Выводим в консоль для проверки (потом удалим)
-      console.log(`[MSG] Дистанция до низа: ${distanceFromBottom}px. Лимит: 150px`);
+      if (isNewMessage && containerRef.current) {
+        const lastMessage = messages[messages.length - 1];
+        const container = containerRef.current;
 
-      // Если дистанция больше 150px — значит мы точно НЕ внизу
-      if (lastMessage?.role !== 'user' && distanceFromBottom > 150) {
-        const diff = messages.length - prevCountRef.current;
-        setUnreadCount(prev => prev + diff);
+        // Считаем остаток до низа
+        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+
+        // Если дистанция больше 150px — значит мы точно НЕ внизу
+        if (lastMessage?.role !== 'user' && distanceFromBottom > 150) {
+          const diff = messages.length - prevCountRef.current;
+          setUnreadCount(prev => prev + diff);
+        }
       }
-    }
-    prevCountRef.current = messages.length;
-  }, [messages.length]);
+      prevCountRef.current = messages.length;
+    }, [messages.length]);
 
 
 

@@ -8,9 +8,10 @@ import { HiArrowPath } from "react-icons/hi2";
 interface WelcomeProps {
     initialIsLogin: boolean;
     canRegister: boolean;
+    canResetPassword: boolean;
 }
 
-export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeProps) {
+export default function Welcome({ initialIsLogin = true, canRegister, canResetPassword }: WelcomeProps) {
     const [isLogin, setIsLogin] = useState(initialIsLogin);
     const [showLoginPassword, setShowLoginPassword] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -150,6 +151,7 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                     <input
                                         type="email"
+                                        autoComplete="username"
                                         value={loginForm.data.email}
                                         onChange={e => loginForm.setData('email', e.target.value)}
                                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
@@ -158,10 +160,21 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                     {loginForm.errors.email && <p className="text-red-500 text-xs mt-1">{loginForm.errors.email}</p>}
                                 </div>
                                 <div className="relative">
+                                    <div className="flex items-center justify-between mb-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                                    {canResetPassword && (
+                                        <Link
+                                            href={route('password.request')}
+                                            className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                                        >
+                                            Забыли пароль?
+                                        </Link>
+                                    )}
+                                    </div>
                                     <div className="relative">
                                         <input
                                             type={showLoginPassword ? 'text' : 'password'}
+                                            autoComplete="current-password"
                                             value={loginForm.data.password}
                                             onChange={e => loginForm.setData('password', e.target.value)}
                                             className={`w-full px-4 py-3 pr-12 rounded-xl border transition-all outline-none
@@ -187,6 +200,19 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                             {loginForm.errors.password}
                                         </p>
                                     )}
+                                </div>                              
+                                <div className="flex items-center space-x-2 my-4">
+                                    <input
+                                        type="checkbox"
+                                        id="remember"
+                                        name="remember"
+                                        checked={loginForm.data.remember}
+                                        onChange={(e) => loginForm.setData('remember', e.target.checked)}
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer select-none">
+                                        Запомнить меня
+                                    </label>
                                 </div>
                                 <button
                                     type="submit"
@@ -197,6 +223,7 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                 </button>
                             </motion.form>
                         ) : (
+                            canRegister ? (
                             <motion.form 
                                 key="register"
                                 initial={{ opacity: 0, x: 20 }}
@@ -223,6 +250,7 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                     <input
                                         type="email"
+                                        autoComplete="new-password"
                                         value={registerForm.data.email}
                                         onChange={e => registerForm.setData('email', e.target.value)}
                                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -239,6 +267,7 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                     <div className="relative">
                                         <input
                                             type={showPassword ? 'text' : 'password'} // ПЕРЕКЛЮЧЕНИЕ ТИПА
+                                            autoComplete="new-password"
                                             value={registerForm.data.password}
                                             onChange={e => registerForm.setData('password', e.target.value)}
                                             className={`w-full px-4 py-3 pr-12 rounded-xl border transition-all outline-none
@@ -265,6 +294,7 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                     <div className="relative">
                                         <input
                                             type={showConfirmPassword ? 'text' : 'password'} // Используем состояние для подтверждения
+                                            autoComplete="new-password"
                                             value={registerForm.data.password_confirmation}
                                             onChange={e => registerForm.setData('password_confirmation', e.target.value)}
                                             className={`w-full px-4 py-3 pr-12 rounded-xl border transition-all outline-none
@@ -318,7 +348,22 @@ export default function Welcome({ initialIsLogin = true, canRegister }: WelcomeP
                                 >
                                     Создать аккаунт
                                 </button>
-                            </motion.form>
+                            </motion.form> ) : (
+                            <motion.div 
+                                key="registration-disabled"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="bg-amber-50 p-6 rounded-2xl border border-amber-100 text-center"
+                            >
+                                <p className="text-amber-800 font-medium">Регистрация временно недоступна</p>
+                                <button 
+                                    onClick={() => setIsLogin(true)}
+                                    className="mt-4 text-blue-600 hover:underline text-sm"
+                                >
+                                    Вернуться ко входу
+                                </button>
+                            </motion.div>
+                        )
                         )}
                     </AnimatePresence>
 
