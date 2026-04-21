@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
@@ -60,7 +60,7 @@ export default function KnowledgeBaseIndex({ documents, categories, filters }: P
 
     useEffect(() => { updateFilters(params); }, [params]);
 
-    // 3. РЕНДЕР СТАТУСА (Вынесен для переиспользования в мобилке и десктопе)
+    // 3. РЕНДЕР СТАТУСА 
     const renderStatus = (doc: Document) => {
         if (doc.status === 'indexed') return (
             <span className="flex items-center gap-1.5 text-[9px] font-black uppercase text-green-600 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">
@@ -145,7 +145,7 @@ export default function KnowledgeBaseIndex({ documents, categories, filters }: P
                 {/* --- MOBILE VIEW (Cards) --- */}
                 <div className="flex flex-col gap-3 md:hidden">
                     {documents.data.length > 0 ? documents.data.map((doc) => (
-                        <div key={doc.id} className={`rounded-3xl border border-sidebar-border/70 bg-background p-5 shadow-sm transition-all ${doc.deleted_at ? 'opacity-50 grayscale bg-muted/20' : ''}`}>
+                        <div key={doc.id} className={`rounded-3xl border border-sidebar-border/70 bg-background p-5 shadow-sm transition-all ${doc.deleted_at ? 'opacity-60 bg-muted/20' : ''}`}>
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2.5 rounded-2xl ${doc.deleted_at ? 'bg-gray-100 text-gray-400' : 'bg-primary/10 text-primary'}`}>
@@ -153,7 +153,7 @@ export default function KnowledgeBaseIndex({ documents, categories, filters }: P
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className={`font-bold truncate max-w-35 ${doc.deleted_at ? 'line-through' : 'text-foreground'}`}>
+                                            <span className={`font-bold truncate max-w-35 ${doc.deleted_at ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                                                 {doc.title}
                                             </span>
                                             {doc.active_chunks > 0 && !doc.deleted_at && (
@@ -165,22 +165,61 @@ export default function KnowledgeBaseIndex({ documents, categories, filters }: P
                                         </span>
                                     </div>
                                 </div>
+
+                                {/* Блок действий */}
                                 <div className="flex gap-1">
-                                    <button onClick={() => setActionConfig({ doc, type: doc.deleted_at ? 'restore' : 'block' })} className="p-2 text-muted-foreground hover:text-primary transition-colors">
+                                    {/* Кнопка просмотра (теперь есть и на мобилках) */}
+                                    <Link 
+                                        href={route('admin.kb.show', doc.id)}
+                                        className="p-2 text-muted-foreground active:text-primary transition-colors"
+                                        title="Просмотр чанков"
+                                    >
+                                        <FileSearch size={18} />
+                                    </Link>
+
+                                    {/* Блокировка / Восстановление */}
+                                    <button 
+                                        onClick={() => setActionConfig({ doc, type: doc.deleted_at ? 'restore' : 'block' })} 
+                                        className={`p-2 rounded-xl transition-all active:scale-110 ${
+                                            doc.deleted_at 
+                                                ? 'text-primary bg-primary/5' 
+                                                : 'text-amber-500 bg-amber-500/5'
+                                        }`}
+                                        title={doc.deleted_at ? "Восстановить" : "В архив"}
+                                    >
                                         {doc.deleted_at ? <RotateCcw size={18}/> : <ShieldAlert size={18}/>}
                                     </button>
-                                    <button onClick={() => setActionConfig({ doc, type: 'force-delete' })} className="p-2 text-destructive hover:bg-destructive/5 rounded-xl transition-colors">
+
+                                    {/* Удаление навсегда */}
+                                    <button 
+                                        onClick={() => setActionConfig({ doc, type: 'force-delete' })} 
+                                        className="p-2 text-destructive active:bg-destructive/10 rounded-xl transition-all active:scale-110"
+                                        title="Удалить навсегда"
+                                    >
                                         <Trash2 size={18}/>
                                     </button>
                                 </div>
                             </div>
+
                             <div className="flex items-center justify-between pt-4 border-t border-sidebar-border/30">
-                                {renderStatus(doc)}
-                                <span className="text-[9px] font-black uppercase text-muted-foreground italic">ID: {doc.id}</span>
+                                {/* Логика статуса: если в архиве — пишем об этом явно */}
+                                <div className="flex items-center gap-2">
+                                    {doc.deleted_at ? (
+                                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 text-[8px] font-black uppercase border border-amber-500/20">
+                                            В архиве
+                                        </span>
+                                    ) : (
+                                        renderStatus(doc)
+                                    )}
+                                </div>
+                                <span className="text-[9px] font-black uppercase text-muted-foreground italic opacity-40">ID: {doc.id}</span>
                             </div>
                         </div>
-                    )) : <div className="p-12 text-center text-muted-foreground text-sm">Документов нет</div>}
+                    )) : (
+                        <div className="p-12 text-center text-muted-foreground text-sm italic">Документов нет</div>
+                    )}
                 </div>
+
 
                 {/* --- DESKTOP VIEW (Table) --- */}
                 <div className="hidden overflow-hidden rounded-[2.5rem] border border-sidebar-border/70 bg-background shadow-sm md:block">
@@ -194,7 +233,7 @@ export default function KnowledgeBaseIndex({ documents, categories, filters }: P
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-sidebar-border/70">
-                            {documents.data.map((doc) => (
+                            {documents.data.length > 0 ? documents.data.map((doc) => (
                                 <tr key={doc.id} className={`group relative hover:bg-muted/20 transition-colors ${doc.deleted_at ? 'opacity-50 bg-muted/10' : ''}`}>
                                     <td className="p-5">
                                         <div className="flex items-center gap-4 min-w-0">
@@ -224,9 +263,14 @@ export default function KnowledgeBaseIndex({ documents, categories, filters }: P
                                         </span>
                                     </td>
                                     <td className="p-5">
-                                        <div 
-                                        className="flex justify-center">
-                                            {renderStatus(doc)}
+                                        <div className="flex justify-center">
+                                            {doc.deleted_at ? (
+                                                <span className="px-2 py-1 rounded-lg bg-amber-500/10 text-amber-600 text-[9px] font-black uppercase border border-amber-500/20 tracking-wider">
+                                                    В архиве
+                                                </span>
+                                            ) : (
+                                                renderStatus(doc)
+                                            )}
                                         </div>
                                     </td>
                                     <td className="p-5 text-right">
@@ -238,22 +282,30 @@ export default function KnowledgeBaseIndex({ documents, categories, filters }: P
                                             >
                                                 <FileSearch size={18} />
                                             </Link>
+
                                             <button 
                                                 onClick={() => setActionConfig({ doc, type: doc.deleted_at ? 'restore' : 'block' })}
                                                 className={`p-2 rounded-xl transition-all hover:scale-110 cursor-pointer ${doc.deleted_at ? 'text-primary bg-primary/5' : 'text-amber-500 bg-amber-500/5'}`}
+                                                // Динамическая подсказка
+                                                title={doc.deleted_at ? "Восстановить из архива" : "Отправить в архив (блокировать)"}
                                             >
                                                 {doc.deleted_at ? <RotateCcw size={18}/> : <ShieldAlert size={18}/>}
                                             </button>
+
                                             <button 
                                                 onClick={() => setActionConfig({ doc, type: 'force-delete' })}
                                                 className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-all hover:scale-110 cursor-pointer"
+                                                // Подсказка для окончательного удаления
+                                                title="Удалить навсегда (безвозвратно)"
                                             >
                                                 <Trash2 size={18}/>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            )):(
+                            <tr><td colSpan={4} className="p-12 text-center text-muted-foreground italic">Документов нет</td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

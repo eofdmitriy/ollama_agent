@@ -2,7 +2,7 @@ import { Fragment, useRef, useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { IoMdClose } from "react-icons/io";
-import { FileText, FolderPlus, Loader2, Upload } from 'lucide-react';
+import { FileText, Loader2, Upload } from 'lucide-react';
 
 interface Props {
     categories: string[];
@@ -14,17 +14,23 @@ export default function UploadDocumentModal({ categories, isOpen, onClose }: Pro
     const fileInput = useRef<HTMLInputElement>(null);
     const [isNewCategory, setIsNewCategory] = useState(false);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         file: null as File | null,
         category: '',
         new_category: '',
     });
 
+    const handleClose = () => {
+        reset();        
+        clearErrors();  
+        onClose();     
+    };
+
     const submit = (e: React.BaseSyntheticEvent) => {
         e.preventDefault();
         post(route('admin.kb.upload'), {
             onSuccess: () => {
-                onClose();
+                handleClose();
                 reset();
                 setIsNewCategory(false);
             },
@@ -33,8 +39,7 @@ export default function UploadDocumentModal({ categories, isOpen, onClose }: Pro
 
     return (
         <Transition show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-50" onClose={onClose}>
-                {/* Оптимизированный оверлей */}
+            <Dialog as="div" className="relative z-50" onClose={handleClose}>
                 <TransitionChild 
                     as={Fragment} 
                     enter="ease-out duration-150" 
@@ -59,7 +64,7 @@ export default function UploadDocumentModal({ categories, isOpen, onClose }: Pro
                     >
                         <DialogPanel className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-8 shadow-2xl transition-all dark:bg-neutral-900 text-left">
                             <button 
-                                onClick={onClose} 
+                                onClick={handleClose} 
                                 className="absolute right-6 top-6 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer outline-none"
                             >
                                 <IoMdClose size={24} />

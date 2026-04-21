@@ -84,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
 
-  // Анимации (PascalCase для типов Framer Motion)
+  // Анимации 
   const sidebarVariants = {
     closed: {
       x: '-100%',
@@ -272,7 +272,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 : 'text-gray-600 hover:bg-gray-100 border-transparent hover:text-gray-900'
                         }`}
                     >
-                        {/* Контейнер для индикатора (фиксированная ширина, чтобы текст не прыгал) */}
+                        {/* Контейнер для индикатора */}
                         <div className="shrink-0 w-4 flex justify-center mr-2">
                             {unreadChatIds?.includes(chat.id) && (
                                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
@@ -378,7 +378,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     <Transition show={chatIdToDelete !== null} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={() => setChatIdToDelete(null)}>
-      {/* 1. Оверлей (TransitionChild вместо Transition.Child) */}
+      {/* 1. Оверлей  */}
       <TransitionChild
         as={Fragment}
         enter="ease-out duration-150"
@@ -394,7 +394,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
           
-          {/* 2. Сама панель (DialogPanel вместо Dialog.Panel) */}
+          {/* 2. Сама панель */}
           <TransitionChild
             as={Fragment}
             enter="ease-out duration-150" 
@@ -419,7 +419,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <RiDeleteBinLine className="h-6 w-6 text-red-600" />
                   </div>
                   <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                    {/* Заголовок (DialogTitle вместо Dialog.Title) */}
+                    {/* Заголовок  */}
                     <DialogTitle as="h3" className="text-lg font-semibold leading-6 text-gray-900">
                       Удалить чат?
                     </DialogTitle>

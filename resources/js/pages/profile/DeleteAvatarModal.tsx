@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from '@headlessui/react';
 import { IoMdClose } from "react-icons/io";
-import { RiImageLine } from "react-icons/ri"; // Используем иконку картинки
+import { RiImageLine } from "react-icons/ri"; 
 import { router } from '@inertiajs/react';
 
 interface Props {
@@ -49,7 +49,7 @@ export default function DeleteAvatarModal({ isOpen, onClose }: Props) {
                                 
                                 <button
                                     onClick={onClose}
-                                    className="absolute right-4 top-4 text-gray-400 hover:text-gray-500 outline-none p-1"
+                                    className="cursor-pointer absolute right-4 top-4 text-gray-400 hover:text-gray-500 outline-none p-1"
                                 >
                                     <IoMdClose className="h-6 w-6" />
                                 </button>
@@ -75,14 +75,14 @@ export default function DeleteAvatarModal({ isOpen, onClose }: Props) {
                                 <div className="bg-gray-50 px-4 py-4 sm:flex sm:flex-row-reverse sm:px-6 gap-2">
                                     <button
                                         type="button"
-                                        className="inline-flex w-full justify-center rounded-xl bg-red-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-0 sm:w-auto transition-colors"
+                                        className="cursor-pointer inline-flex w-full justify-center rounded-xl bg-red-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-0 sm:w-auto transition-colors"
                                         onClick={handleConfirmDelete}
                                     >
                                         Удалить
                                     </button>
                                     <button
                                         type="button"
-                                        className="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors"
+                                        className="cursor-pointer mt-3 inline-flex w-full justify-center rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors"
                                         onClick={onClose}
                                     >
                                         Отмена

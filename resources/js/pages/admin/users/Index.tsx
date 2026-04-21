@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, User } from '@/types'; 
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import debounce from 'lodash/debounce';
 import { MessageSquare, Edit2, Trash2, Search } from 'lucide-react';
@@ -23,6 +23,7 @@ export default function Index({ users, filters }: Props) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const { auth } = usePage().props;
 
     const openDeleteModal = (user: User) => {
         setUserToDelete(user);
@@ -85,7 +86,9 @@ export default function Index({ users, filters }: Props) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-sidebar-border/70">
-                            {users.data.map((user) => (
+                            {users.data.length > 0 ? users.data.map((user) => {
+                                const isMe = user.id === auth.user.id;
+                                return (
                                 <tr key={user.id} className="hover:bg-muted/30 transition-colors group">
                                     <td className="p-4 flex items-center gap-3">
                                         <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20 shrink-0">
@@ -99,10 +102,16 @@ export default function Index({ users, filters }: Props) {
                                             <span className={`font-semibold ${user.deleted_at ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                                 {user.name}
                                             </span>
-                                            
+
+                                            {isMe && (
+                                                <span className="text-xs text-blue-500 font-medium bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                                    Это Вы
+                                                </span>
+                                            )}
+
                                             {user.deleted_at && (
                                                 <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-destructive/10 text-destructive border border-destructive/20 rounded">
-                                                    Удален
+                                                    В архиве
                                                 </span>
                                             )}
                                         </div>
@@ -112,57 +121,86 @@ export default function Index({ users, filters }: Props) {
                                         <div className="flex justify-end items-center gap-1">
                                             <Link href={route('admin.users.chats', user.id)} className="rounded-md p-2 text-primary hover:bg-primary/10 transition-colors" title="Чаты"><MessageSquare size={18}/></Link>
                                             <button onClick={() => openEditModal(user)} className="rounded-md p-2 text-amber-600 hover:bg-amber-50 cursor-pointer disabled:cursor-not-allowed" title="Редактировать"><Edit2 size={18}/></button>
+                                            {!isMe && (
                                             <button onClick={() => openDeleteModal(user)} className="rounded-md p-2 text-destructive hover:bg-destructive/10 cursor-pointer disabled:cursor-not-allowed" title="Удалить"><Trash2 size={18}/></button>
+                                            )}
                                         </div>
                                     </td>
-                                </tr>
-                            ))}
+                                </tr>)
+                            }):(
+                            <tr><td colSpan={3} className="p-12 text-center text-muted-foreground italic">Пользователи не найдены</td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 {/* --- КАРТОЧКИ (только для мобильных устройств) --- */}
                 <div className="flex flex-col gap-3 md:hidden">
-                    {users.data.map((user) => (
-                        <div key={user.id} className="rounded-2xl border border-sidebar-border/70 bg-background p-4 shadow-sm active:scale-[0.98] transition-transform">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20 shrink-0">
-                                    {user.avatar ? (
-                                        <img src={`/storage/${user.avatar}`} alt="" className="size-full object-cover" />
-                                    ) : (
-                                        <span className="text-sm font-bold text-primary">{user.name[0]}</span>
+                    {users.data.length > 0 ? users.data.map((user) => {
+                        const isMe = user.id === auth.user.id; // Определяем "себя"
+
+                        return (
+                            <div key={user.id} className="rounded-2xl border border-sidebar-border/70 bg-background p-4 shadow-sm active:scale-[0.98] transition-transform">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20 shrink-0">
+                                        {user.avatar ? (
+                                            <img src={`/storage/${user.avatar}`} alt="" className="size-full object-cover" />
+                                        ) : (
+                                            <span className="text-sm font-bold text-primary">{user.name[0]}</span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <div className="flex items-center gap-2">
+                                             <span className={`font-bold truncate ${user.deleted_at ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                                {user.name}
+                                            </span>
+
+                                            {user.deleted_at && (
+                                                <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-destructive/10 text-destructive border border-destructive/20 rounded">
+                                                    В архиве
+                                                </span>
+                                            )}
+                                            {isMe && (
+                                                <span className="text-[10px] text-blue-500 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                                    ВЫ
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                                    </div>
+                                </div>
+                                
+                                {/* Меняем grid-cols-3 на flex, чтобы кнопки не прыгали без удаления */}
+                                <div className="flex gap-2 border-t border-sidebar-border/50 pt-3">
+                                    <Link 
+                                        href={route('admin.users.chats', user.id)} 
+                                        className="flex-1 flex items-center justify-center h-10 rounded-xl bg-primary/5 text-primary active:bg-primary/20"
+                                    >
+                                        <MessageSquare size={18} />
+                                    </Link>
+                                    <button 
+                                        onClick={() => openEditModal(user)} 
+                                        className="flex-1 flex items-center justify-center h-10 rounded-xl bg-amber-50 text-amber-600 active:bg-amber-100"
+                                    >
+                                        <Edit2 size={18} />
+                                    </button>
+                                    
+                                    {/* Кнопка удаления только для других */}
+                                    {!isMe && (
+                                        <button 
+                                            onClick={() => openDeleteModal(user)} 
+                                            className="flex-1 flex items-center justify-center h-10 rounded-xl bg-destructive/5 text-destructive active:bg-destructive/10"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
                                     )}
                                 </div>
-                                <div className="flex flex-col min-w-0">
-                                    <span className="font-bold text-foreground truncate">{user.name}</span>
-                                    <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                                </div>
                             </div>
-                            
-                            <div className="grid grid-cols-3 gap-2 border-t border-sidebar-border/50 pt-3">
-                                <Link 
-                                    href={route('admin.users.chats', user.id)} 
-                                    className="flex items-center justify-center h-10 rounded-xl bg-primary/5 text-primary active:bg-primary/20"
-                                >
-                                    <MessageSquare size={18} />
-                                </Link>
-                                <button 
-                                    onClick={() => openEditModal(user)} 
-                                    className="flex items-center justify-center h-10 rounded-xl bg-amber-50 text-amber-600 active:bg-amber-100 cursor-pointer disabled:cursor-not-allowed"
-                                >
-                                    <Edit2 size={18} />
-                                </button>
-                                <button 
-                                    onClick={() => openDeleteModal(user)} 
-                                    className="flex items-center justify-center h-10 rounded-xl bg-destructive/5 text-destructive active:bg-destructive/10 cursor-pointer disabled:cursor-not-allowed"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    }) : (
+                        <p className="text-center py-10 text-muted-foreground italic">Пользователи не найдены</p>
+                    )}
                 </div>
-
                 {/* Пагинация (адаптивная: скрываем лишние ссылки на мобилках через CSS в AppLayout или делаем компактной здесь) */}
                 <div className="flex flex-wrap justify-center gap-1 py-4">
                     {users.links.map((link, i) => (

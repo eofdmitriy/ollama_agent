@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { KeyboardEvent } from 'react';
 import { IoIosSearch } from "react-icons/io";
 import { VscSend } from "react-icons/vsc";
 import type { OllamaStatus } from '@/types/chat';
@@ -108,7 +107,6 @@ const InputForm: React.FC<InputFormProps> = ({ onSendMessage, isLoading, healthS
                 onKeyDown={handleKeyDown}
                 placeholder={healthStatus.status === 'down' ? 'Сервис недоступен...' : "Задайте вопрос..."}
                 disabled={isLoading || healthStatus.status === 'down'}
-                /* Убираем border и rounded у самой textarea, добавляем hide-scrollbar */
                 className="max-lg:custom-scrollbar w-full pl-12 pr-4 py-3 bg-transparent border-none focus:outline-none focus:ring-0 resize-none leading-6 block scroll-smooth text-gray-700 placeholder:text-gray-400"
                 style={{ 
                   minHeight: '44px', 

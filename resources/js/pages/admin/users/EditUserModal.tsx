@@ -23,7 +23,7 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
     const isFirstAdmin = auth.user.id === 1;
     const fileInput = useRef<HTMLInputElement>(null);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
         email: '',
         role: '',
@@ -32,9 +32,15 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
         _method: 'PATCH', 
     });
 
-    // Заполняем форму данными юзера при открытии
+    const handleClose = () => {
+        reset();        
+        clearErrors(); 
+        onClose();      
+    };
+
+    // Заполняем форму данными юзера при открытии ИЛИ смене юзера
     useEffect(() => {
-        if (user) {
+        if (isOpen && user) { 
             setData({
                 name: user.name,
                 email: user.email,
@@ -44,7 +50,8 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
                 _method: 'PATCH',
             });
         }
-    }, [user]); 
+    }, [user, isOpen]); 
+
 
 
     const submit = (e: React.BaseSyntheticEvent) => {
@@ -53,7 +60,7 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
 
         post(route('admin.users.update', user.id), {
             onSuccess: () => {
-                onClose();
+                handleClose();
                 reset();
             },
         });
@@ -61,16 +68,17 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
 
     const removePhoto = (e: React.MouseEvent) => {
         e.stopPropagation(); 
-        setData({
-            ...data,
+        setData(prev => ({
+            ...prev,
             avatar: null,
-            delete_avatar: true // Помечаем для сервера
-        });
+            delete_avatar: true
+        }));
     };
+
 
     return (
         <Transition show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-50" onClose={onClose}>
+            <Dialog as="div" className="relative z-50" onClose={handleClose}>
                 <TransitionChild as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
                     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
                 </TransitionChild>
@@ -79,7 +87,7 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
                     <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
                         <DialogPanel className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-8 shadow-2xl transition-all dark:bg-neutral-900">
                             <div className="absolute top-0 right-0 p-5">
-                                <button onClick={onClose} className="absolute right-6 top-6 text-gray-400 hover:text-gray-600 cursor-pointer disabled:cursor-not-allowed"><IoMdClose size={24} /></button>
+                                <button onClick={handleClose} className="absolute right-6 top-6 text-gray-400 hover:text-gray-600 cursor-pointer disabled:cursor-not-allowed"><IoMdClose size={24} /></button>
                             </div>
                             <DialogTitle as="h3" className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                                 Редактировать профиль
@@ -169,7 +177,7 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
                                 <div className="mt-8 flex gap-3">
                                     <button 
                                         type="button" 
-                                        onClick={onClose} 
+                                        onClick={handleClose} 
                                         className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer disabled:cursor-not-allowed"
                                     >
                                         Отмена

@@ -41,6 +41,17 @@ export default function Welcome({ initialIsLogin = true, canRegister, canResetPa
         agreement: false,
     });
 
+    const toggleAuthMode = () => {
+        loginForm.reset();
+        loginForm.clearErrors();
+        registerForm.reset();
+        registerForm.clearErrors();
+        setShowLoginPassword(false);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+        setIsLogin(!isLogin);
+    };
+
     const handleLoginSubmit = (e: React.BaseSyntheticEvent) => {
         e.preventDefault();
         loginForm.post('/login', {
@@ -57,13 +68,30 @@ export default function Welcome({ initialIsLogin = true, canRegister, canResetPa
 
     const getErrorMessage = (error?: string) => {
         if (!error) return null;
-        if (error.includes('credentials')) return 'Неверный email или пароль';
-        if (error.includes('required')) return 'Это поле обязательно для заполнения';
-        if (error.includes('email')) return 'Введите корректный адрес почты';
-        if (error.includes('taken')) return 'Этот email уже занят';
-        if (error.includes('password') && error.includes('confirmation')) return 'Пароли не совпадают';
-        if (error.includes('at least 8 characters')) return 'Пароль должен быть не менее 8 символов';
-        return error; // Если не совпало, вернем как есть
+        const e = error.toLowerCase();
+
+        if (e.includes('match our records') || e.includes('credentials')) {
+            return 'Неверный email или пароль';
+        }
+        if (e.includes('taken')) {
+            return 'Этот email уже занят';
+        }
+
+        if (e.includes('password') && e.includes('confirmation')) {
+            return 'Пароли не совпадают';
+        }
+        if (e.includes('at least 8 characters')) {
+            return 'Пароль должен быть не менее 8 символов';
+        }
+
+        if (e.includes('required')) {
+            return 'Это поле обязательно для заполнения';
+        }
+        if (e.includes('email')) {
+            return 'Введите корректный адрес почты';
+        }
+
+        return error; 
     };
 
 
@@ -154,10 +182,10 @@ export default function Welcome({ initialIsLogin = true, canRegister, canResetPa
                                         autoComplete="username"
                                         value={loginForm.data.email}
                                         onChange={e => loginForm.setData('email', e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 bg-white"
                                         placeholder="example@mail.com"
                                     />
-                                    {loginForm.errors.email && <p className="text-red-500 text-xs mt-1">{loginForm.errors.email}</p>}
+                                    {loginForm.errors.email && <p className="text-red-500 text-xs mt-1">{getErrorMessage(loginForm.errors.email)}</p>}
                                 </div>
                                 <div className="relative">
                                     <div className="flex items-center justify-between mb-1">
@@ -194,12 +222,6 @@ export default function Welcome({ initialIsLogin = true, canRegister, canResetPa
                                             )}
                                         </button>
                                     </div>
-                                    {/* Сообщение об ошибке (если есть) */}
-                                    {loginForm.errors.password && (
-                                        <p className="text-red-500 text-xs mt-1 font-medium">
-                                            {loginForm.errors.password}
-                                        </p>
-                                    )}
                                 </div>                              
                                 <div className="flex items-center space-x-2 my-4">
                                     <input
@@ -316,7 +338,7 @@ export default function Welcome({ initialIsLogin = true, canRegister, canResetPa
                                             type="checkbox"
                                             checked={registerForm.data.agreement}
                                             onChange={e => registerForm.setData('agreement', e.target.checked)}
-                                            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                         />
                                         <span className="text-sm text-gray-600">
                                             Я согласен на{' '}
@@ -370,7 +392,8 @@ export default function Welcome({ initialIsLogin = true, canRegister, canResetPa
                     {/* ПЕРЕКЛЮЧАТЕЛЬ */}
                     {loginForm.errors.email !== 'account_deleted' && <div className="mt-8 text-center">
                         <button 
-                            onClick={() => setIsLogin(!isLogin)}
+                            type="button" 
+                            onClick={toggleAuthMode}
                             className="text-sm text-blue-600 hover:text-blue-800 font-medium cursor-pointer disabled:cursor-not-allowed"
                         >
                             {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Head, usePage, router, useForm } from '@inertiajs/react';
 import AuthenticatedChatLayout from '@/layouts/AuthenticatedChatLayout';
 import { 
@@ -19,7 +19,6 @@ import DeleteUserModal from './DeleteUserModal';
 import DeleteAvatarModal from './DeleteAvatarModal';
 
 export default function Show() {
-    // 1. Достаем данные из пропсов страницы
     const { auth, ollamaStatus, ai_model } = usePage<any>().props;
     const user = auth.user;
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -76,13 +75,6 @@ export default function Show() {
         }
     }, []);
 
-    // Плейсхолдер для аватара
-    const defaultAvatar = (
-        <div className="w-24 h-24 bg-linear-to-br from-blue-400 to-indigo-500 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-100">
-            <IoPersonOutline className="w-12 h-12 text-white" />
-        </div>
-    );
-
     return (
         <AuthenticatedChatLayout showHistory={false} ai_model={ai_model}>
             <Head title="Профиль" />
@@ -98,14 +90,13 @@ export default function Show() {
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                         <div className="space-y-1">
                             <h1 className="text-2xl md:text-3xl font-black text-gray-800 tracking-tight leading-none">
-                                Личный кабинет
+                                Профиль
                             </h1>
                             <p className="text-sm md:text-base text-gray-500">
                                 Управляйте данными и безопасностью
                             </p>
                         </div>
                         
-                        {/* Бейдж теперь прижимается к левому краю на мобилках и к правому на десктопе */}
                         <div className="flex sm:justify-end">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] md:text-xs font-bold border border-green-100 shadow-xs shadow-green-100/50">
                                 <IoShieldCheckmarkOutline className="w-3.5 h-3.5" />
@@ -198,13 +189,26 @@ export default function Show() {
                                         <span className="text-sm font-medium">{user.email}</span>
                                     </div>
                                     
-                                    <div className="flex items-center justify-center md:justify-start gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100/30">
-                                        <div className={`w-2 h-2 rounded-full ${ollamaStatus?.status ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'bg-amber-400 animate-pulse'}`} />
-                                        <span className="text-sm font-bold text-blue-600/80 uppercase tracking-wider flex items-center gap-1">
-                                            <IoHardwareChipOutline className="w-3.5 h-3.5" />
-                                            AI: {ollamaStatus?.model || 'Проверка...'}
-                                        </span>
-                                    </div>
+                                <div className="flex items-center justify-center md:justify-start gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100/30">
+                                    <div className={`w-2 h-2 rounded-full ${
+                                        ollamaStatus?.status === 'online' 
+                                            ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]' 
+                                            : ollamaStatus?.status === 'down'
+                                                ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                                                : 'bg-amber-400 animate-pulse'
+                                    }`} />
+                                    <span className="text-sm font-bold text-blue-600/80 uppercase tracking-wider flex items-center gap-1">
+                                        <IoHardwareChipOutline className="w-3.5 h-3.5" />
+                                        AI: {
+                                            ollamaStatus?.status === 'online' 
+                                                ? (ollamaStatus?.model || 'Загрузка...') 
+                                                : ollamaStatus?.status === 'down' 
+                                                    ? 'Offline' 
+                                                    : 'Проверка...'
+                                        }
+                                    </span>
+                                </div>
+
                                 </div>
                             </div>
                         </div>
@@ -213,21 +217,21 @@ export default function Show() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
                             <button 
                             onClick={() => setIsProfileModalOpen(true)}
-                            className="flex items-center justify-center gap-3 py-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl font-bold transition-all active:scale-95 group border border-blue-100/50">
+                            className="cursor-pointer flex items-center justify-center gap-3 py-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl font-bold transition-all active:scale-95 group border border-blue-100/50">
                                 <IoCreateOutline className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                                 Изменить данные
                             </button>
 
                             <button 
                             onClick={() => setIsPasswordModalOpen(true)}
-                            className="flex items-center justify-center gap-3 py-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-2xl font-bold transition-all active:scale-95 group border border-indigo-100/50">
+                            className="cursor-pointer flex items-center justify-center gap-3 py-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-2xl font-bold transition-all active:scale-95 group border border-indigo-100/50">
                                 <IoKeyOutline className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
                                 Безопасность
                             </button>
 
                             <button 
                             onClick={() => setIsDeleteModalOpen(true)}
-                            className="flex items-center justify-center gap-3 py-4 bg-red-50 hover:bg-red-100 text-red-500 rounded-2xl font-bold transition-all active:scale-95 group border border-red-100/50">
+                            className="cursor-pointer flex items-center justify-center gap-3 py-4 bg-red-50 hover:bg-red-100 text-red-500 rounded-2xl font-bold transition-all active:scale-95 group border border-red-100/50">
                                 <IoTrashOutline className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                 Удалить аккаунт
                             </button>
@@ -257,8 +261,27 @@ export default function Show() {
                                 <div className="w-1.5 h-4 bg-indigo-400 rounded-full" />
                                 AI Ассистент
                             </h4>
-                            <p className="text-sm text-blue-600/70 leading-relaxed">
-                                Статус <b>{ollamaStatus?.status || 'ожидание'}</b> означает доступность локальной языковой модели для ваших чатов.
+                            <p className="text-sm text-blue-600/70 leading-relaxed min-h-10"> 
+                                <AnimatePresence mode="wait">
+                                    <motion.span
+                                        key={ollamaStatus?.status || 'loading'}
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="block"
+                                    >
+                                        {ollamaStatus?.status === 'online' && (
+                                            <>Искусственный интеллект <b>подключен</b> и готов к работе с вашими чатами в режиме реального времени.</>
+                                        )}
+                                        {ollamaStatus?.status === 'down' && (
+                                            <>К сожалению, сервис ИИ сейчас <b>недоступен</b>. Приносим извинения за временные неудобства.</>
+                                        )}
+                                        {!ollamaStatus?.status && (
+                                            <><b>Ожидание ответа...</b> Проверяем статус подключения искусственного интеллекта.</>
+                                        )}
+                                    </motion.span>
+                                </AnimatePresence>
                             </p>
                         </motion.div>
                     </div>

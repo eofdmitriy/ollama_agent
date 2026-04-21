@@ -2,13 +2,13 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
 
-// Используем интерфейс, который мы подготовили для отображения
+
 interface FormattedMessage {
   id: string | number;
   text: string;
   isUser: boolean;
   timestamp: Date | string;
-  tokens?: number; // Если будешь передавать из Ollama
+  tokens?: number; 
 }
 
 interface MessageListProps {
@@ -79,7 +79,6 @@ return (
       {messages.map((message, index) => {
         const isInitial = initialIds.has(message.id);
         
-        // РАСЧЕТ ИНВЕРСИИ:
         // Если сообщений 10, то для последнего (index 9) задержка будет 0,
         // для предпоследнего (index 8) — 0.08 и так далее.
         const reverseIndex = messages.length - 1 - index;

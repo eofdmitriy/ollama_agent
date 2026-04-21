@@ -3,8 +3,8 @@ import React, {useState} from 'react';
 import { HiOutlineLightBulb } from 'react-icons/hi';
 import { RxHamburgerMenu } from 'react-icons/rx';
 import { Link } from '@inertiajs/react'; 
-import { IoPersonOutline } from "react-icons/io5"; // Набор Ionicons 5
-import { RiLogoutBoxLine } from "react-icons/ri";   // Набор Remix Icon
+import { IoPersonOutline } from "react-icons/io5"; 
+import { RiLogoutBoxLine } from "react-icons/ri";   
 import LogoutModal from './LogoutModal';
 
 interface HeaderProps {
@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({
           
           {/* Левый блок: логотип и информация */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Логотип теперь ведет на главную (создание нового чата) */}
+            {/* Логотип ведет на главную (создание нового чата) */}
             <Link 
               href={route('chats.index')} 
               className="bg-white/20 p-2 rounded-lg hover:bg-white/30 transition-colors"
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({
             {/* Заголовок и статус */}
             <div className="flex flex-col">
               <h1 className="text-lg font-bold sm:text-xl md:text-2xl mb-0.5 leading-tight">
-                {showHistory ? `${title}` : 'Личный кабинет'}
+                {showHistory ? `${title}` : 'Профиль'}
               </h1>
               
               {/* Статус модели */}

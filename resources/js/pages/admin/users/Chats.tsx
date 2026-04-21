@@ -130,7 +130,7 @@ export default function UserChats({ targetUser, chats, filters }: Props) {
                                             </span>                                            
                                             {chat.deleted_at && (
                                                 <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-destructive/10 text-destructive border border-destructive/20 rounded">
-                                                    Удален
+                                                    В архиве
                                                 </span>
                                             )}
                                         </div>
@@ -174,9 +174,17 @@ export default function UserChats({ targetUser, chats, filters }: Props) {
                                 <span className="text-[10px] text-muted-foreground font-medium">
                                     {new Date(chat.created_at).toLocaleDateString()}
                                 </span>
+                                {chat.deleted_at && (
+                                    <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-destructive/10 text-destructive border border-destructive/20 rounded">
+                                        В архиве
+                                    </span>
+                                )}
                             </div>
                             
-                            <h3 className="font-bold text-foreground mb-3 line-clamp-2">{chat.title || 'Новый чат'}</h3>
+                            <h3 className={`font-bold mb-3 line-clamp-2 ${chat.deleted_at ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                {chat.title || 'Новый чат'}
+                            </h3>
+
                             
                             <div className="flex items-center justify-between border-t border-sidebar-border/50 pt-3">
                                 <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">

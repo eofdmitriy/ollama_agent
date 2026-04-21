@@ -10,10 +10,16 @@ interface Props {
 }
 
 export default function UpdateProfileModal({ isOpen, onClose, user }: Props) {
-    const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
+    const { data, setData, patch, errors, processing, recentlySuccessful, reset, clearErrors } = useForm({
         name: user.name,
         email: user.email,
     });
+
+    const handleClose = () => {
+        reset();        
+        clearErrors();  
+        onClose();      
+    };
 
     const submit = (e: React.BaseSyntheticEvent) => {
         e.preventDefault();
@@ -22,14 +28,14 @@ export default function UpdateProfileModal({ isOpen, onClose, user }: Props) {
             // Добавляем 'ollamaStatus' в список полей, которые Inertia должна подтянуть
             only: ['auth', 'errors', 'ollamaStatus'], 
             onSuccess: () => {
-                setTimeout(() => onClose(), 1000);
+                setTimeout(() => handleClose(), 1000);
             },
         });
     };
 
     const getErrorMessage = (error?: string) => {
         if (!error) return null;
-        const e = error.toLowerCase(); // Приводим к нижнему регистру для надежности
+        const e = error.toLowerCase(); 
         if (e.includes('credentials')) return 'Неверный email или пароль';
         if (e.includes('required')) return 'Это поле обязательно для заполнения';
         if (e.includes('email')) return 'Введите корректный адрес почты';
@@ -39,7 +45,7 @@ export default function UpdateProfileModal({ isOpen, onClose, user }: Props) {
 
     return (
         <Transition show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-50" onClose={onClose}>
+            <Dialog as="div" className="relative z-50" onClose={handleClose}>
                 <TransitionChild
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -65,7 +71,7 @@ export default function UpdateProfileModal({ isOpen, onClose, user }: Props) {
                         >
                             <DialogPanel className="relative transform overflow-hidden rounded-4xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                                 <div className="absolute top-0 right-0 p-6">
-                                    <button onClick={onClose} className="text-gray-400 hover:text-gray-500 transition-colors">
+                                    <button onClick={handleClose} className="cursor-pointer text-gray-400 hover:text-gray-500 transition-colors">
                                         <IoCloseOutline className="w-8 h-8" />
                                     </button>
                                 </div>
@@ -122,15 +128,15 @@ export default function UpdateProfileModal({ isOpen, onClose, user }: Props) {
                                         <div className="flex gap-3">
                                             <button
                                                 type="button"
-                                                onClick={onClose}
-                                                className="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                                                onClick={handleClose}
+                                                className="cursor-pointer px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
                                             >
                                                 Отмена
                                             </button>
                                             <button
                                                 type="submit"
                                                 disabled={processing}
-                                                className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 transition-all active:scale-95 disabled:opacity-50"
+                                                className="cursor-pointer px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 transition-all active:scale-95 disabled:opacity-50"
                                             >
                                                 {processing ? 'Сохранение...' : 'Сохранить'}
                                             </button>

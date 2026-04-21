@@ -64,7 +64,7 @@ export default function AuthenticatedChatLayout({ children, showHistory = true, 
         }
 
         // 2. ПОДПИСКА на события
-        const channel = echo.private(`user.${auth.user.id}`)
+        echo.private(`user.${auth.user.id}`)
             .listen('.MessageSent', (e: { message: any }) => {
                 const incomingChatId = e.message.chat_id;
                 
@@ -154,7 +154,7 @@ export default function AuthenticatedChatLayout({ children, showHistory = true, 
                     showHistory={showHistory}
                 />
                 
-                <div className="flex flex-1 overflow-hidden relative">
+                <div className="flex flex-1 overflow-hidden relative bg-neutral-50">
                     <Sidebar
                         healthStatus={ollamaStatus}
                         model={currentChat?.model_name || 'Загрузка...'}

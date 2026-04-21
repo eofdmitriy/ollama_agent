@@ -1,4 +1,3 @@
-import React from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { ChevronLeft, Database, Layers, Calendar, Tag } from 'lucide-react';
@@ -9,6 +8,7 @@ interface Chunk {
     is_current: boolean;
     valid_from: string;
     valid_to: string | null;
+    deleted_at: string | null;
 }
 
 interface Props {
@@ -66,17 +66,33 @@ export default function DocumentShow({ document, chunks }: Props) {
                         >
                             {/* Индикаторы статуса чанка */}
                             <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center gap-1 text-[9px] font-black uppercase text-muted-foreground bg-muted px-2 py-1 rounded-lg">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="flex items-center gap-1 text-[9px] font-black uppercase text-muted-foreground bg-muted px-2 py-1 rounded-lg shrink-0">
                                         <Layers size={10} /> Фрагмент #{index + 1}
                                     </span>
-                                    {chunk.is_current ? (
-                                        <span className="text-[9px] font-black uppercase text-green-600 bg-green-500/10 px-2 py-1 rounded-lg border border-green-500/20">
+
+                                    {chunk.deleted_at ? (
+                                        /* УДАЛЕН — Красный щит / замок */
+                                        <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-red-600 bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/20">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" /> {/* Точка для акцента */}
+                                            <span>Архив</span>
+                                            <span className="opacity-70 mx-0.5">|</span>
+                                            <span className="flex items-center gap-1">
+                                                <span className="hidden sm:inline">No</span> RAG
+                                            </span>
+                                        </span>
+                                    ) : chunk.is_current ? (
+                                        <span className="text-[9px] font-black uppercase text-green-600 bg-green-500/10 px-2 py-1 rounded-lg border border-green-500/20 shrink-0">
                                             Актуален
                                         </span>
                                     ) : (
-                                        <span className="text-[9px] font-black uppercase text-amber-600 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
-                                            Архивный
+                                        /* АРХИВ ДОСТУПЕН — Зеленая точка или значок Check */
+                                        <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-amber-600 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                                            <span>Архив</span>
+                                            <span className="opacity-70 mx-0.5">|</span>
+                                            <span className="flex items-center gap-1 text-green-600">
+                                                <span className="hidden sm:inline text-amber-600">Yes</span> RAG
+                                            </span>
                                         </span>
                                     )}
                                 </div>
@@ -92,7 +108,7 @@ export default function DocumentShow({ document, chunks }: Props) {
                                 {chunk.content}
                             </div>
 
-                            {/* Векторная подпись (для стиля) */}
+                            {/* Векторная подпись */}
                             <div className="mt-4 pt-4 border-t border-sidebar-border/30 flex justify-between items-center">
                                 <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest">
                                     <Database size={10} /> Векторизован

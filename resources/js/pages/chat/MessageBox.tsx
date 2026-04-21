@@ -48,13 +48,13 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessin
     if (isAtBottom) {
       setUnreadCount(0);
     } else {
-      // КЛЮЧЕВОЕ: Обновляем только при ручном скролле, чтобы ResizeObserver знал, где стоять
+      // Обновляем только при ручном скролле, чтобы ResizeObserver знал, где стоять
       lastScrollTopRef.current = scrollTop;
     }
     wasAtBottomRef.current = isAtBottom;
   }, []);
 
-    // 1. СЧЕТЧИК: Срабатывает СТРОГО при изменении массива
+    // 1. СЧЕТЧИК: Срабатывает при изменении массива
     useLayoutEffect(() => {
       const isNewMessage = messages.length > prevCountRef.current;
       
@@ -76,7 +76,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessin
 
 
 
-  // 2. ОБСЕРВЕР: Управляет "прилипанием"
+  // 2. ОБСЕРВЕР: Управляет прилипанием
 
   useEffect(() => {
     if (!contentRef.current || !containerRef.current) return;
@@ -98,8 +98,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessin
       }
 
       // 2. Если мы НЕ внизу (пользователь читает историю) — 
-      // ПРОСТО ВЫХОДИМ. Не нужно переприсваивать scrollTop.
-      // Браузер благодаря overflow-anchor: auto сам удержит позицию.
+      // ВЫХОДИМ. Не нужно переприсваивать scrollTop
       if (!wasAtBottomRef.current) {
         return; 
       }
@@ -136,17 +135,15 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessin
     <AnimatePresence>
       {showScrollButton && (
         <motion.div 
-          // Изменили bottom-24 на bottom-32 (или выше, например bottom-40), чтобы поднять кнопку
           className="fixed bottom-28 right-4 lg:right-8 z-50"
           initial={{ opacity: 0, y: 20, scale: 0.8 }}
           animate={{ 
             opacity: 1, 
-            y: [0, -10, 0], // Кнопка плавно ходит вверх-вниз на 10px
+            y: [0, -10, 0], 
             scale: 1 
           }}
           exit={{ opacity: 0, y: 10, scale: 0.8 }}
           transition={{ 
-            // Комбинируем типы анимации
             opacity: { duration: 0.2 },
             scale: { duration: 0.2 },
             y: {
@@ -162,7 +159,6 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessin
           >
             <IoIosArrowDown className="w-6 h-6" />
             
-            {/* Бейдж оставляем без изменений */}
             <AnimatePresence>
               {unreadCount > 0 && (
                 <motion.span
