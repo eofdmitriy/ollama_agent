@@ -135,8 +135,8 @@ export default function Show() {
                                 {user.avatar && !imgError ? (
                                     <img 
                                         src={`/storage/${user.avatar}`} 
-                                        alt={`${user.name || 'Пользователь'}`} // Добавили alt
-                                        onError={() => setImgError(true)} // Если ошибка, ставим true
+                                        alt={`${user.name || 'Пользователь'}`} 
+                                        onError={() => setImgError(true)} 
                                         className="w-24 h-24 rounded-3xl object-cover shadow-lg border-2 border-white group-hover:opacity-80 transition-opacity"
                                     />
                                 ) : (
