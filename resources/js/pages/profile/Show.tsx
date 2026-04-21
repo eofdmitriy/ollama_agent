@@ -25,6 +25,7 @@ export default function Show() {
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleteAvatarModalOpen, setIsDeleteAvatarModalOpen] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     const fileInput = useRef<HTMLInputElement>(null);
 
@@ -131,10 +132,11 @@ export default function Show() {
                                         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                     </div>
                                 )}
-
-                                {user.avatar ? (
+                                {user.avatar && !imgError ? (
                                     <img 
                                         src={`/storage/${user.avatar}`} 
+                                        alt={`${user.name || 'Пользователь'}`} // Добавили alt
+                                        onError={() => setImgError(true)} // Если ошибка, ставим true
                                         className="w-24 h-24 rounded-3xl object-cover shadow-lg border-2 border-white group-hover:opacity-80 transition-opacity"
                                     />
                                 ) : (
