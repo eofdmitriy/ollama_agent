@@ -128,7 +128,7 @@ export default function EditUserModal({ user, isOpen, onClose }: Props) {
                                     )}
                                 </div>
                                 
-                                <input type="file" ref={fileInput} hidden onChange={(e) => {
+                                <input type="file" accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" ref={fileInput} hidden onChange={(e) => {
                                     setData(prev => ({ ...prev, avatar: e.target.files?.[0] || null, delete_avatar: false }));
                                 }} />
                                 

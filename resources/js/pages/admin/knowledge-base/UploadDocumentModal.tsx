@@ -80,7 +80,7 @@ export default function UploadDocumentModal({ categories, isOpen, onClose }: Pro
                                     onClick={() => fileInput.current?.click()}
                                     className={`relative h-32 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${data.file ? 'border-primary bg-primary/5' : 'border-gray-200 bg-gray-50 hover:border-primary'}`}
                                 >
-                                    <input type="file" ref={fileInput} hidden onChange={e => setData('file', e.target.files?.[0] || null)} />
+                                    <input type="file" accept=".pdf, .docx, .txt, .html, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/plain, text/html" ref={fileInput} hidden onChange={e => setData('file', e.target.files?.[0] || null)} />
                                     {data.file ? (
                                         <div className="flex flex-col items-center">
                                             <FileText className="text-primary mb-1" size={28} />

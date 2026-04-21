@@ -123,7 +123,7 @@ export default function Show() {
                                     ref={fileInput} 
                                     className="hidden" 
                                     onChange={onFileChange} 
-                                    accept="image/*"
+                                    accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" 
                                 />
                                 
                                 {processing && (
