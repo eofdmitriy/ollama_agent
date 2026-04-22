@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-
+import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineLightBulb } from 'react-icons/hi';
 import { RxHamburgerMenu } from 'react-icons/rx';
 import { Link } from '@inertiajs/react'; 
@@ -10,7 +10,7 @@ import LogoutModal from './LogoutModal';
 interface HeaderProps {
   title?: string;
   // Меняем типы статуса под те, что приходят из OllamaService
-  status?: 'online' | 'down'; 
+  status?: 'online' | 'down' | 'loading';
   onToggleSidebar: () => void;
   ai_model?: string;
   showHistory?: boolean;
@@ -51,15 +51,62 @@ const Header: React.FC<HeaderProps> = ({
               </h1>
               
               {/* Статус модели */}
-              <div className="flex items-center space-x-2">
-                <div className={`
-                  w-2 h-2 rounded-full 
-                  ${status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}
-                `}></div>
-                <span className="text-xs sm:text-sm text-blue-100 font-medium">
-                  {status === 'online' ? `${aiName} активна` : `${aiName} недоступна`}
-                </span>
-              </div>
+            <div className="flex items-center space-x-3 h-6">
+                <div className="relative flex items-center justify-center w-3 h-3">
+                    {/* 1. Внешнее свечение (Glow) с AnimatePresence для смены цвета */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={status}
+                            initial={{ opacity: 0, scale: 0.5 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.5 }}
+                            transition={{ duration: 0.5 }}
+                            className={`absolute inset-0 rounded-full blur-[3px] ${
+                                status === 'online' ? 'bg-green-400/40' : 
+                                status === 'loading' ? 'bg-amber-400/40' : 'bg-red-400/40'
+                            }`}
+                        />
+                    </AnimatePresence>
+
+                    {/* 2. Основная точка с эффектом Pulse для Online */}
+                    <motion.div 
+                        animate={{
+                            backgroundColor: status === 'online' ? '#4ade80' : status === 'loading' ? '#fbbf24' : '#f87171',
+                        }}
+                        transition={{ duration: 0.8 }}
+                        className={`w-2 h-2 rounded-full z-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] ${
+                            status === 'online' ? 'animate-pulse' : ''
+                        }`}
+                    />
+                    
+                    {/* 3. Волна Ping только для Loading */}
+                    {status === 'loading' && (
+                        <div 
+                            className="absolute inset-0 rounded-full animate-ping bg-amber-400 opacity-70"
+                            style={{ animationDuration: '1.5s' }}
+                        />
+                    )}
+                </div>
+
+                {/* Блок анимированного текста */}
+                <div className="overflow-hidden relative h-5 flex items-center">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                        <motion.span
+                            key={`status-text-${status}`}
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -10, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="text-xs sm:text-sm text-blue-100 font-medium whitespace-nowrap"
+                        >
+                            {status === 'online' && `${aiName} активна`}
+                            {status === 'down' && `${aiName} недоступна`}
+                            {status === 'loading' && `${aiName}: проверка связи...`}
+                        </motion.span>
+                    </AnimatePresence>
+                </div>
+            </div>
+
             </div>
           </div>
 

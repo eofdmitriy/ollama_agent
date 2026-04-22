@@ -79,11 +79,16 @@ class AdminDashboardController extends Controller
 
         // 3. Обновляем остальные поля и сохраняем
         $user->name = $validated['name'];
-        $user->email = $validated['email'];
+        
+        if ($user->email !== $validated['email']) {
+            $user->email = $validated['email'];
+            $user->email_verified_at = null; 
+        }
 
-         if ($request->has('role') && auth()->id() === 1 && $user->id !== 1) {
+        if ($request->has('role') && auth()->id() === 1 && $user->id !== 1) {
             $user->role = $request->role;
         }
+        
         $user->save();
 
         return back()->with('success', 'Данные пользователя успешно обновлены');

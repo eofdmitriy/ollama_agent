@@ -191,25 +191,61 @@ export default function Show() {
                                         <span className="text-sm font-medium">{user.email}</span>
                                     </div>
                                     
-                                <div className="flex items-center justify-center md:justify-start gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100/30">
-                                    <div className={`w-2 h-2 rounded-full ${
-                                        ollamaStatus?.status === 'online' 
-                                            ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]' 
-                                            : ollamaStatus?.status === 'down'
-                                                ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
-                                                : 'bg-amber-400 animate-pulse'
-                                    }`} />
-                                    <span className="text-sm font-bold text-blue-600/80 uppercase tracking-wider flex items-center gap-1">
-                                        <IoHardwareChipOutline className="w-3.5 h-3.5" />
-                                        AI: {
-                                            ollamaStatus?.status === 'online' 
-                                                ? (ollamaStatus?.model || 'Загрузка...') 
-                                                : ollamaStatus?.status === 'down' 
-                                                    ? 'Offline' 
-                                                    : 'Проверка...'
-                                        }
-                                    </span>
-                                </div>
+<div className="flex items-center justify-center md:justify-start gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100/30">
+    <div className="relative flex items-center justify-center w-2 h-2">
+        {/* Анимированная точка */}
+        <motion.div
+            animate={{
+                backgroundColor: 
+                    ollamaStatus?.status === 'online' ? '#4ade80' : 
+                    ollamaStatus?.status === 'down' ? '#ef4444' : '#fbbf24',
+                boxShadow: 
+                    ollamaStatus?.status === 'online' ? '0 0 8px rgba(74,222,128,0.5)' : 
+                    ollamaStatus?.status === 'down' ? '0 0 8px rgba(239,68,68,0.5)' : '0 0 0px rgba(0,0,0,0)',
+                scale: ollamaStatus?.status === 'online' ? [1, 1.1, 1] : 1
+            }}
+            transition={{ 
+                backgroundColor: { duration: 0.5 },
+                scale: ollamaStatus?.status === 'online' ? { repeat: Infinity, duration: 2 } : { duration: 0.2 }
+            }}
+            className="w-2 h-2 rounded-full z-10"
+        />
+
+        {/* Эффект волны (ping) */}
+        {!(ollamaStatus?.status === 'online' || ollamaStatus?.status === 'down') && (
+            <motion.div
+                initial={{ scale: 1, opacity: 1 }}
+                animate={{ scale: 2.5, opacity: 0 }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className="absolute inset-0 bg-amber-400 rounded-full"
+            />
+        )}
+    </div>
+
+    <span className="text-sm font-bold text-blue-600/80 uppercase tracking-wider flex items-center gap-1">
+        <IoHardwareChipOutline className="w-3.5 h-3.5" />
+        <div className="overflow-hidden relative h-5 flex items-center">
+            <AnimatePresence mode="wait">
+                <motion.span
+                    key={ollamaStatus?.status + (ollamaStatus?.model || '')}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    AI: {
+                        ollamaStatus?.status === 'online' 
+                            ? (ollamaStatus?.model || 'Загрузка...') 
+                            : ollamaStatus?.status === 'down' 
+                                ? 'Offline' 
+                                : 'Проверка...'
+                    }
+                </motion.span>
+            </AnimatePresence>
+        </div>
+    </span>
+</div>
+
 
                                 </div>
                             </div>

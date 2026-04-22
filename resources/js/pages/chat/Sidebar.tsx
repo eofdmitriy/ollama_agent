@@ -29,7 +29,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  healthStatus = { status: 'down', model: 'Загрузка...' }, // Дефолт
+  healthStatus, // Дефолт
   model = 'Ollama',
   messageCount = 0,
   allChats = [], // Пустой массив, если чатов нет
@@ -56,6 +56,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Реф активного чата
   const activeChatRef = useRef<HTMLDivElement>(null);
   const [chatIdToLogout, setChatIdToLogout] = useState(false);
+
+  const status = healthStatus || { status: 'loading', model: 'Загрузка...' };
+  console.log(status.status);
 
   useEffect(() => {
         setLocalChats(allChats);
@@ -314,19 +317,53 @@ const Sidebar: React.FC<SidebarProps> = ({
           </motion.div>
 
           {/* ИНФОРМАЦИЯ О СИСТЕМЕ */}
-          {showHistory && (<motion.div variants={itemVariants} className="pt-4 border-t border-gray-100">
-             <div className="bg-gray-50 p-4 rounded-xl space-y-3">
+          {showHistory && (
+            <motion.div variants={itemVariants} className="pt-4 border-t border-gray-100">
+              <div className="bg-gray-50 p-4 rounded-xl space-y-3">
+                
+               
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-black text-gray-400 tracking-tighter">Status</span>
-                  <div className={`w-2 h-2 rounded-full ${healthStatus.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                  
+                  
+                <div className="relative w-2 h-2">
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      backgroundColor: 
+                        status.status === 'online' ? '#22c55e' : 
+                        status.status === 'loading' ? '#fbbf24' : 
+                        '#ef4444',
+                    }}
+                    transition={{ duration: 0.8 }}
+
+                    className={`
+                      absolute inset-0 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] z-10
+                      ${status.status === 'online' ? 'animate-pulse' : ''}
+                    `}
+                  />
+                  
+                  {status.status === 'loading' && (
+                    <div 
+                      className="absolute inset-0 rounded-full animate-ping bg-amber-400 opacity-70"
+                      style={{ animationDuration: '1.5s' }}
+                    />
+                  )}
                 </div>
+
+                </div>
+
                 <p className="text-sm font-bold text-gray-700 truncate">{model}</p>
+
+                
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] text-gray-400 uppercase">Messages</span>
                   <span className="text-xs font-black text-blue-600">{messageCount}</span>
                 </div>
-             </div>
-          </motion.div>)}
+                
+              </div>
+            </motion.div>
+          )}
 
           {/* НИЖНЯЯ ПАНЕЛЬ: ПРОФИЛЬ И ВЫХОД (ТОЛЬКО МОБИЛЬНЫЕ) */}
           <motion.div 
@@ -370,8 +407,12 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         {/* КНОПКИ УПРАВЛЕНИЯ */}
         <motion.div variants={itemVariants} className="p-6 border-t border-gray-200 space-y-2">
-          <button onClick={onRefreshStatus} className="w-full flex items-center justify-center gap-2 py-2.5 text-[10px] font-black text-blue-600 hover:bg-blue-50 rounded-lg transition-colors uppercase tracking-widest cursor-pointer disabled:cursor-not-allowed">
-            <RxUpdate className="w-4 h-4" /> Sync Status
+          <button 
+          onClick={onRefreshStatus} 
+          disabled={status.status === 'loading'}
+          className="w-full flex items-center justify-center gap-2 py-2.5 text-[10px] font-black text-blue-600 hover:bg-blue-50 rounded-lg transition-colors uppercase tracking-widest cursor-pointer disabled:cursor-not-allowed">
+            <RxUpdate className={`w-4 h-4 ${status.status === 'loading' ? 'animate-spin' : ''}`} />
+            <span>{status.status === 'loading' ? 'Syncing...' : 'Sync Status'}</span>
           </button>
         </motion.div>
       </motion.div>

@@ -18,7 +18,7 @@ export default function AuthenticatedChatLayout({ children, showHistory = true, 
     const { 
         currentChat, 
         allChats: initialChats,
-        ollamaStatus = { status: 'down', model: 'Загрузка...' },
+        ollamaStatus,
         auth,
     } = usePage<any>().props;
 
@@ -28,6 +28,19 @@ export default function AuthenticatedChatLayout({ children, showHistory = true, 
     const [localChats, setLocalChats] = useState(initialChats);
     const [unreadChatIds, setUnreadChatIds] = useState<number[]>([]);
     const prevMessagesCount = useRef(messages?.length || 0);
+    const [isReloading, setIsReloading] = useState(false);
+
+    const handleRefreshStatus = () => {
+        router.reload({ 
+                only: ['ollamaStatus'],
+                onStart: () => setIsReloading(true),
+                onFinish: () => setIsReloading(false),
+            });
+    };
+
+    const currentStatus = isReloading 
+    ? { status: 'loading', model: 'Загрузка...' } 
+    : (ollamaStatus || { status: 'loading', model: 'Загрузка...' });
 
     useEffect(() => {
         setLocalChats(initialChats);
@@ -148,7 +161,7 @@ export default function AuthenticatedChatLayout({ children, showHistory = true, 
 
                 <Header 
                     title={currentChat?.title || 'Новый чат'}
-                    status={ollamaStatus?.status || 'down'} 
+                    status={currentStatus.status}  
                     onToggleSidebar={handleToggleSidebar}
                     ai_model={ai_model}
                     showHistory={showHistory}
@@ -156,14 +169,14 @@ export default function AuthenticatedChatLayout({ children, showHistory = true, 
                 
                 <div className="flex flex-1 overflow-hidden relative bg-neutral-50">
                     <Sidebar
-                        healthStatus={ollamaStatus}
+                        healthStatus={currentStatus} 
                         model={currentChat?.model_name || 'Загрузка...'}
                         messageCount={messages?.length || 0}
                         allChats={localChats || []}
                         currentChatId={currentChat?.id}
                         onClearChat={handleClearChat}
                         onCreateChat={handleCreateChat}
-                        onRefreshStatus={() => router.reload({ only: ['ollamaStatus'] })}
+                        onRefreshStatus={handleRefreshStatus}
                         isOpen={shouldShowSidebar} 
                         onClose={() => setIsSidebarOpen(false)} 
                         showHistory={showHistory}

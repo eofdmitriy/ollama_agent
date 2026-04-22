@@ -19,6 +19,7 @@ class MockOllamaService implements LlmServiceContract
 {
     private string $cacheKey = 'mock_ollama_status_state';
     private string $model;
+    private static ?int $lastUsedIndex = null;
 
     public function __construct() {
         $this->model = config('services.ollama.model');
@@ -31,30 +32,38 @@ class MockOllamaService implements LlmServiceContract
         $lowerPrompt = mb_strtolower($prompt);
 
         // Логика сбоя
-        if (str_contains($lowerPrompt, 'сломайся')) {
-            Cache::put($this->cacheKey, 'down', 10);
+        if (Cache::get($this->cacheKey) === 'down') {
+            throw new Exception("Ollama Offline (MOCK).");
+        }
+
+        $isUserCommand = preg_match('/^вопрос:\s*сломайся/iu', $lowerPrompt) 
+                        || $lowerPrompt === 'сломайся';
+
+        if ($isUserCommand) {
+            Cache::put($this->cacheKey, 'down', now()->addSeconds(10)); 
             throw new Exception("Критический сбой Ollama: соединение потеряно (MOCK).");
         }
 
-        if (str_contains($lowerPrompt, 'починись')) {
-            Cache::forget($this->cacheKey);
-            return "Система восстановлена через Prism Fake!";
-        }
-
-        if (Cache::get($this->cacheKey) === 'down') {
-            throw new Exception("Ollama Offline: Сервис находится в режиме сбоя.");
-        }
-
         // Варианты ответов разной длины
-        $responses = [
+       $responses = [
             "Принято! Обрабатываю ваш запрос.",
-            "Я проанализировал ваш промпт '{$prompt}' и считаю, что это интересная задача для нейросети.",
-            "В рамках текущей симуляции (Prism Fake) я имитирую работу модели {$this->model}. Ваш системный промпт был: " . ($system ?: 'пустой') . ".\nВсе системы работают в штатном режиме.",
+            "Я проанализировал ваш промпт и считаю, что это интересная задача для нейросети.",
             "[MOCK_DATA] Status: 200. Tokens: 42. Logic: Success. Prompt_Length: " . strlen($prompt),
-            "Представьте, что здесь очень умный ответ от Ollama, который помогает вам решить все проблемы за один клик!"
+            "Представьте, что здесь очень умный ответ от Ollama, который помогает вам решить все проблемы за один клик!",
+            "Для решения вашей задачи по анализу контекста и интеграции с моделью {$this->model}, я предлагаю следующий алгоритм действий:\n\n1. Проверка входящего потока данных через векторизацию в PGVector.\n2. Семантический поиск по базе знаний (RAG) для извлечения релевантных чанков информации.\n3. Очистка и нормализация полученного контекста для минимизации галлюцинаций.\n4. Генерация финального ответа с учетом истории диалога.\n\nЭтот подход позволяет не только увеличить точность ответов, но и значительно снизить затраты на токены за счет отсечения лишней информации на этапе пре-процессинга. Если у вас возникнут дополнительные вопросы по архитектуре системы, я готов разобрать каждый пункт подробнее!"
         ];
 
-        $randomText = Arr::random($responses);
+
+        $availableIndices = array_keys($responses);
+        if (self::$lastUsedIndex !== null) {
+            $availableIndices = array_diff($availableIndices, [self::$lastUsedIndex]);
+        }
+
+        $randomIndex = Arr::random($availableIndices);
+        
+        self::$lastUsedIndex = $randomIndex;
+
+        $randomText = $responses[$randomIndex];
 
         // Подменяем ответ в Prism
         Prism::fake([
@@ -73,7 +82,7 @@ class MockOllamaService implements LlmServiceContract
         ]);
 
         // Имитируем задержку "раздумий" ИИ
-        sleep(1); 
+        // sleep(1); 
         
         return Prism::text()
             ->using(Provider::Ollama, $this->model)
@@ -102,7 +111,7 @@ class MockOllamaService implements LlmServiceContract
             )
         ]);
 
-        sleep(1); 
+        // sleep(1); 
 
         return Prism::text()
             ->using(Provider::Ollama, 'mock')
@@ -121,6 +130,6 @@ class MockOllamaService implements LlmServiceContract
         if (Cache::get($this->cacheKey) === 'down') {
             return ['status' => 'down', 'error' => 'Offline по команде пользователя'];
         }
-        return ['status' => 'online', 'model' => 'prism-mock-llama'];
+        return ['status' => 'online', 'model' => 'prism-mock-ollama'];
     }
 }

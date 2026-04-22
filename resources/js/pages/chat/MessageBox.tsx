@@ -123,7 +123,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({ children, messages, isProcessin
       ref={containerRef}
       className="flex-1 overflow-y-auto relative"
       onScroll={handleScroll}
-      style={{ overflowAnchor: 'auto', scrollBehavior: 'auto' }}
+      style={{ overflowAnchor: 'none', scrollBehavior: 'auto' }}
     >
       <div ref={contentRef} className="flex flex-col min-h-full p-4">
          <div className="flex-1">

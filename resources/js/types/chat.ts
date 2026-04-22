@@ -17,7 +17,7 @@ export interface DBChat {
 }
 
 export interface OllamaStatus {
-    status: 'online' | 'down';
+    status: 'online' | 'down' | 'loading';
     model?: string;
     error?: string;
 }
